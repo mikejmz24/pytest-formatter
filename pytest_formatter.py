@@ -208,16 +208,49 @@ class FormatterPlugin:
 
     # ── Per-result rendering ──────────────────────────────────────────────────
 
+    # Noise lines that add no value in compact output
+    _NOISE = (
+        "Use -v to get more diff",
+        "use -vv to show",
+        "Omitting",
+        "Full diff",
+    )
+
+    def _e_color(self, line: str, outcome: str, is_first: bool) -> str:
+        """
+        Pick the right colour for a single E line.
+
+          -  expected value  → green
+          +  received value  → red
+          ?  diff pointer    → dim
+          first line        → red  (the main error/exception message)
+          everything else   → dim  (context, not signal)
+        """
+        if outcome == "skipped":
+            return c_skip(line)
+        if line.startswith("- ") or line == "-":
+            return c_pass(line)          # expected  → green
+        if line.startswith("+ ") or line == "+":
+            return c_fail(line)          # received  → red
+        if line.startswith("? "):
+            return c_dim(line)           # diff pointer → dim
+        if is_first:
+            return c_emsg(line)          # main error message → red
+        return c_dim(line)               # context lines → dim
+
     def _render_result(self, r: TestResult) -> None:
         badge = _BADGE.get(r.outcome, r.outcome.upper())
         dur   = c_dim(f"  {r.duration * 1000:.1f}ms")
         self._p(f"  --- {badge}  {r.name}{dur}")
 
         if r.short_msg:
-            # Skip reasons in yellow, everything else in red
-            msg_color = c_skip if r.outcome == "skipped" else c_emsg
-            for line in r.short_msg.splitlines():
-                self._p(f"    {c_emsg('E')}  {msg_color(line)}")
+            lines = [
+                ln for ln in r.short_msg.splitlines()
+                if not any(noise in ln for noise in self._NOISE)
+            ]
+            for i, line in enumerate(lines):
+                colored = self._e_color(line, r.outcome, is_first=(i == 0))
+                self._p(f"    {c_emsg('E')}  {colored}")
 
         # Captured stdout / stderr / logs — only shown when a test fails/errors
         if r.outcome not in ("passed", "xfailed"):
