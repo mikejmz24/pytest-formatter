@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 580" width="780" height="580">
+  <defs>
+    <style>
+      .terminal { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace; font-size: 13px; }
+      .dim      { fill: #666666; }
+      .bold     { fill: #e2e2e2; font-weight: bold; }
+      .white    { fill: #e2e2e2; }
+      .pass     { fill: #5fd700; }   /* c_pass  — bright green  */
+      .fail     { fill: #ff5f5f; }   /* c_fail  — bright red    */
+      .error    { fill: #af0000; }   /* c_error — standard red  */
+      .skip     { fill: #ffd700; }   /* c_skip  — bright yellow */
+      .xpass    { fill: #ffd700; }   /* c_xpass — bright yellow */
+      .xfail    { fill: #ff5f5f; }   /* c_xfail — bright red    */
+      .emsg     { fill: #fccdae; }   /* c_emsg  — soft peach    */
+      .section  { fill: #808080; }   /* c_section — gray        */
+    </style>
+  </defs>
+
+  <!-- Terminal window chrome -->
+  <rect width="780" height="580" rx="10" ry="10" fill="#0d1117"/>
+  <rect width="780" height="36" rx="10" ry="10" fill="#161b22"/>
+  <rect x="0" y="20" width="780" height="16" fill="#161b22"/>
+
+  <!-- Traffic lights -->
+  <circle cx="20" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="40" cy="18" r="6" fill="#febc2e"/>
+  <circle cx="60" cy="18" r="6" fill="#28c840"/>
+
+  <!-- Window title -->
+  <text x="390" y="23" text-anchor="middle" class="terminal dim" font-size="12">pytest-glaze — make test-corpus</text>
+
+  <!-- Content starts at y=56, line-height=22 -->
+
+  <!-- collected -->
+  <text x="20" y="66" class="terminal dim">collected </text>
+  <text x="98" y="66" class="terminal bold">57</text>
+  <text x="113" y="66" class="terminal dim"> tests</text>
+
+  <!-- blank line -->
+
+  <!-- file header -->
+  <text x="20" y="104" class="terminal white">tests/test_assertions.py</text>
+
+  <!-- PASS lines -->
+  <text x="32" y="126" class="terminal pass">---</text>
+  <text x="58" y="126" class="terminal pass"> PASS </text>
+  <text x="103" y="126" class="terminal white"> test_pass_int</text>
+  <text x="534" y="126" class="terminal dim">  0.2ms</text>
+
+  <text x="32" y="148" class="terminal pass">---</text>
+  <text x="58" y="148" class="terminal pass"> PASS </text>
+  <text x="103" y="148" class="terminal white"> test_pass_string</text>
+  <text x="534" y="148" class="terminal dim">  0.2ms</text>
+
+  <!-- FAIL -->
+  <text x="32" y="170" class="terminal fail">---</text>
+  <text x="58" y="170" class="terminal fail"> FAIL </text>
+  <text x="103" y="170" class="terminal white"> test_fail_int_equality</text>
+  <text x="534" y="170" class="terminal dim">  0.4ms</text>
+  <!-- E line: assert 3 == 30 -->
+  <text x="44" y="192" class="terminal emsg">E  </text>
+  <text x="68" y="192" class="terminal emsg">assert </text>
+  <text x="118" y="192" class="terminal fail">3</text>
+  <text x="128" y="192" class="terminal emsg"> == </text>
+  <text x="155" y="192" class="terminal pass">30</text>
+
+  <!-- FAIL with is not None -->
+  <text x="32" y="214" class="terminal fail">---</text>
+  <text x="58" y="214" class="terminal fail"> FAIL </text>
+  <text x="103" y="214" class="terminal white"> test_fail_none_check</text>
+  <text x="534" y="214" class="terminal dim">  0.3ms</text>
+  <text x="44" y="236" class="terminal emsg">E  assert </text>
+  <text x="116" y="236" class="terminal fail">None</text>
+  <text x="148" y="236" class="terminal emsg"> is </text>
+  <text x="172" y="236" class="terminal pass">not None</text>
+
+  <!-- SKIP -->
+  <text x="32" y="258" class="terminal skip">---</text>
+  <text x="58" y="258" class="terminal skip"> SKIP </text>
+  <text x="103" y="258" class="terminal white"> test_skip_platform_conditional</text>
+  <text x="534" y="258" class="terminal dim">  0.2ms</text>
+  <text x="44" y="280" class="terminal skip">E  Skipped: Windows-only feature</text>
+
+  <!-- XFAIL -->
+  <text x="32" y="302" class="terminal xfail">---</text>
+  <text x="58" y="302" class="terminal xfail"> XFAIL</text>
+  <text x="110" y="302" class="terminal white"> test_xfail_expected_failure</text>
+  <text x="534" y="302" class="terminal dim">  0.3ms</text>
+  <text x="44" y="324" class="terminal xfail">E  xfailed: known bug — assert will fail as expected</text>
+
+  <!-- XPASS -->
+  <text x="32" y="346" class="terminal xpass">---</text>
+  <text x="58" y="346" class="terminal xpass"> XPASS</text>
+  <text x="110" y="346" class="terminal white"> test_xpass_unexpected_pass</text>
+  <text x="534" y="346" class="terminal dim">  0.2ms</text>
+  <text x="44" y="368" class="terminal xpass">E  xpassed: this test unexpectedly passes</text>
+
+  <!-- ERROR -->
+  <text x="32" y="390" class="terminal error">---</text>
+  <text x="58" y="390" class="terminal error"> ERROR</text>
+  <text x="110" y="390" class="terminal white"> test_error_in_fixture_teardown</text>
+  <text x="534" y="390" class="terminal dim">  0.3ms</text>
+  <text x="44" y="412" class="terminal emsg">E  RuntimeError: Teardown exploded intentionally</text>
+
+  <!-- per-file summary -->
+  <text x="32" y="444" class="terminal dim">  =></text>
+  <text x="58" y="444" class="terminal pass"> 2 passed</text>
+  <text x="130" y="444" class="terminal white">,</text>
+  <text x="138" y="444" class="terminal fail"> 2 failed</text>
+  <text x="210" y="444" class="terminal white">,</text>
+  <text x="218" y="444" class="terminal error"> 1 error</text>
+  <text x="275" y="444" class="terminal white">,</text>
+  <text x="283" y="444" class="terminal skip"> 1 skipped</text>
+  <text x="363" y="444" class="terminal white">,</text>
+  <text x="371" y="444" class="terminal xfail"> 1 xfailed</text>
+  <text x="450" y="444" class="terminal white">,</text>
+  <text x="458" y="444" class="terminal xpass"> 1 xpassed</text>
+
+  <!-- divider -->
+  <line x1="20" y1="462" x2="760" y2="462" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Total line -->
+  <text x="20" y="484" class="terminal bold">Total: </text>
+  <text x="72" y="484" class="terminal pass">2 passed</text>
+  <text x="136" y="484" class="terminal white">, </text>
+  <text x="148" y="484" class="terminal fail">2 failed</text>
+  <text x="212" y="484" class="terminal white">, </text>
+  <text x="224" y="484" class="terminal error">1 error</text>
+  <text x="276" y="484" class="terminal white">, </text>
+  <text x="288" y="484" class="terminal skip">1 skipped</text>
+  <text x="360" y="484" class="terminal white">, </text>
+  <text x="372" y="484" class="terminal xfail">1 xfailed</text>
+  <text x="444" y="484" class="terminal white">, </text>
+  <text x="456" y="484" class="terminal xpass">1 xpassed</text>
+  <text x="534" y="484" class="terminal dim">  in 0.73s</text>
+
+  <!-- cursor blink -->
+  <rect x="20" y="504" width="8" height="14" fill="#5fd700" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0;0.8" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

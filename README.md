@@ -1,57 +1,59 @@
-# pytest-glaze
+<div align="center">
 
-> A thin, transparent coat that makes your test output shine.
+# 🏺 pytest-glaze
+
+### A thin, transparent coat that makes your test output shine.
+
+[![PyPI version](https://img.shields.io/pypi/v/pytest-glaze?color=5fd700&labelColor=0d1117&label=pypi)](https://pypi.org/project/pytest-glaze/)
+[![Python](https://img.shields.io/pypi/pyversions/pytest-glaze?color=5fd700&labelColor=0d1117)](https://pypi.org/project/pytest-glaze/)
+[![pytest](https://img.shields.io/badge/pytest-%E2%89%A57.0-5fd700?labelColor=0d1117)](https://docs.pytest.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-5fd700?labelColor=0d1117)](LICENSE)
+[![GitHub](https://img.shields.io/badge/github-mikejmz24%2Fpytest--glaze-5fd700?labelColor=0d1117&logo=github)](https://github.com/mikejmz24/pytest-formatter)
+
+<br/>
+
+![pytest-glaze demo](demo.svg)
+
+</div>
+
+---
 
 pytest-glaze is a drop-in pytest output formatter that replaces the default
 terminal reporter with a compact, color-semantic display. Failures surface
 inline — no scrolling to a deferred block — and every color carries a
 consistent meaning across every line type.
 
-```
-collected 57 tests
-
-tests/test_assertions.py
-  --- PASS  test_pass_int                                    0.2ms
-  --- PASS  test_pass_string                                 0.2ms
-  --- FAIL  test_fail_int_equality                           0.4ms
-    E  assert 3 == 30
-  --- FAIL  test_fail_none_check                             0.3ms
-    E  assert None is not None
-  --- FAIL  test_fail_dict                                   0.6ms
-    E  AssertionError: assert {'a': 1, 'b': 2} == {'a': 1, 'b': 999}
-    E  Differing items:
-    E  {'b': 2} != {'b': 999}
-  => 2 passed, 3 failed
-
-Total: 2 passed, 3 failed  in 0.18s
-```
-
 ---
 
 ## Why pytest-glaze?
 
-The default pytest reporter is designed for completeness. pytest-glaze is
-designed for **reading speed**. When you are deep in a debugging session, the
-question is always the same: _what failed, and what exactly was wrong?_
+The default pytest reporter is designed for completeness.
+pytest-glaze is designed for **reading speed**.
+When you are deep in a debugging session the question is always the same:
+_what failed, and what exactly was wrong?_
 
-|                               | Default reporter   | pytest-rich / pytest-pretty | **pytest-glaze** |
-| ----------------------------- | ------------------ | --------------------------- | ---------------- |
-| Failures inline               | ✗ (deferred block) | Partial                     | ✓                |
-| Consistent color semantics    | ✗                  | Partial                     | ✓                |
-| Zero extra dependencies       | ✓                  | ✗ (Rich)                    | ✓                |
-| Compact — one line per result | ✗                  | ✗                           | ✓                |
-| Per-file summaries            | ✗                  | ✗                           | ✓                |
+|                               | Default reporter | pytest-rich / pytest-pretty | **pytest-glaze** |
+| ----------------------------- | :--------------: | :-------------------------: | :--------------: |
+| Failures inline               | ✗ deferred block |           Partial           |        ✓         |
+| Consistent color semantics    |        ✗         |           Partial           |        ✓         |
+| Zero extra dependencies       |        ✓         |       ✗ Rich required       |        ✓         |
+| Compact — one line per result |        ✗         |              ✗              |        ✓         |
+| Per-file summaries            |        ✗         |              ✗              |        ✓         |
 
-**Color semantics** are applied uniformly across every line type:
+<br/>
 
-| Color           | Meaning                                   | Examples                                                        |
-| --------------- | ----------------------------------------- | --------------------------------------------------------------- |
-| 🔴 Bright red   | Received / wrong value / expected failure | assert line left side, `Obtained:`, `+` diff lines, XFAIL badge |
-| 🟢 Green        | Expected / target value                   | assert line right side, `Expected:`, `-` diff lines             |
-| 🟡 Yellow       | Skipped / unexpected pass                 | SKIP badge, XPASS badge, skip reason                            |
-| ⬜ Soft peach   | Context / prose                           | Exception messages, diff context, `E` prefix                    |
-| 🔴 Standard red | Collection / setup errors                 | ERROR badge, collection error messages                          |
-| 🔅 Dim          | Metadata                                  | Duration, collection count                                      |
+### Color convention
+
+Every color carries one meaning, applied consistently across every line type:
+
+| Badge | Color        | Meaning                                     | Where you see it                                                         |
+| :---: | ------------ | ------------------------------------------- | ------------------------------------------------------------------------ |
+|  🟢   | Bright green | Received ✓ / expected value                 | PASS badge, `---`, assert right side, `-` diff, `Expected:` label        |
+|  🔴   | Bright red   | Received ✗ / wrong value / expected failure | FAIL · XFAIL badge, `---`, assert left side, `+` diff, `Obtained:` label |
+|  🟡   | Yellow       | Skipped / unexpected pass                   | SKIP · XPASS badge, `---`, skip reason                                   |
+|  🔴   | Standard red | Collection / setup errors                   | ERROR badge, `---`, collection error messages                            |
+|  🍑   | Soft peach   | Context / prose                             | Exception messages, diff context, `E` prefix, operator keywords          |
+|  🔅   | Dim          | Metadata                                    | Duration, collection count, `Total:` line                                |
 
 ---
 
@@ -61,19 +63,19 @@ question is always the same: _what failed, and what exactly was wrong?_
 pip install pytest-glaze
 ```
 
-pytest-glaze registers itself automatically via pytest's plugin system.
-No configuration required — install and run.
+pytest-glaze registers itself automatically — no configuration required.
+Install and run.
 
 ### Requirements
 
-- Python ≥ 3.10
-- pytest ≥ 7.0
+- **Python** ≥ 3.10
+- **pytest** ≥ 7.0
 
 ---
 
 ## Usage
 
-### Automatic (recommended)
+### Automatic
 
 Once installed, pytest-glaze activates for every `pytest` invocation:
 
@@ -83,9 +85,9 @@ pytest tests/
 
 ### Makefile (strongly recommended)
 
-For teams and projects with a Makefile-driven workflow, the following pattern
-gives you precise control: glaze on by default, raw output available when you
-need to debug the formatter itself.
+A Makefile gives you precise control: glaze on by default, raw output
+available when you need to debug the formatter itself. This is the
+recommended setup for any project with a regular test workflow.
 
 ```makefile
 PYTHON := python
@@ -93,9 +95,11 @@ PYTEST := uv run pytest          # or: python -m pytest
 TESTS  := tests/
 
 # Core formatter flags
+# -p no:terminal    silence the default reporter
+# -p pytest_glaze   load our plugin (PYTHONPATH=. makes it importable)
 FMT := -p no:terminal -p pytest_glaze
 
-# Optional filters
+# Optional pass-through filters
 SUITE ?=
 CASE  ?=
 K     ?=
@@ -107,26 +111,33 @@ _KFLAG := $(if $(K),-k "$(K)",$(if $(CASE),-k "$(CASE)",))
 .PHONY: test test-fast test-unit test-raw
 
 ## test        Run suite with glaze output.
-##             SUITE=, CASE=, K= for filtering.
+##             SUITE=, CASE=, K= for filtering. ARGS= for raw pytest flags.
+##             Examples:
+##               make test
+##               make test SUITE=tests/test_entities.py
+##               make test CASE=test_return_statuses_dict
+##               make test K="sprint and not slow"
 test:
 	@PYTHONPATH=. $(PYTEST) $(FMT) $(_PATH) $(_KFLAG) $(ARGS)
 
-## test-fast   Stop on first failure.
+## test-fast   Stop on first failure (-x). Accepts same filters as `test`.
 test-fast:
 	@PYTHONPATH=. $(PYTEST) $(FMT) -x $(_PATH) $(_KFLAG) $(ARGS)
 
-## test-unit   Unit tests only — clean pass/fail signal.
+## test-unit   Unit tests only — clean pass/fail signal, no intentional failures.
 test-unit:
-	@PYTHONPATH=. $(PYTEST) $(FMT) tests/test_parsers.py tests/test_colorizer.py tests/test_plugin.py
+	@PYTHONPATH=. $(PYTEST) $(FMT) tests/test_parsers.py tests/test_colorizer.py tests/test_plugin.py $(_KFLAG) $(ARGS)
 
-## test-raw    Default pytest output. Useful for debugging the formatter.
+## test-raw    Raw default pytest output. Useful for debugging the formatter.
 test-raw:
 	@$(PYTEST) $(_PATH) $(_KFLAG) $(ARGS)
+
+## help        List all targets.
+help:
+	@grep -E '^##' Makefile | sed 's/^## /  /'
 ```
 
-### Disabling per-invocation
-
-If you need the default reporter for a single run:
+### Disable for a single run
 
 ```bash
 pytest -p no:pytest_glaze tests/
@@ -136,14 +147,18 @@ pytest -p no:pytest_glaze tests/
 
 ## What it formats
 
-### Passing tests
+<details>
+<summary><strong>Passing tests</strong></summary>
 
 ```
 --- PASS  test_user_login                                  0.8ms
 --- PASS  test_token_refresh                               1.2ms
 ```
 
-### Failing assertions — inline, never deferred
+</details>
+
+<details>
+<summary><strong>Failing assertions — inline, never deferred</strong></summary>
 
 ```
 --- FAIL  test_fail_int_equality                           0.4ms
@@ -162,7 +177,10 @@ pytest -p no:pytest_glaze tests/
   E  assert False
 ```
 
-### Dict and list diffs
+</details>
+
+<details>
+<summary><strong>Dict and list diffs</strong></summary>
 
 ```
 --- FAIL  test_fail_dict                                   0.6ms
@@ -171,9 +189,16 @@ pytest -p no:pytest_glaze tests/
   E  {'b': 2} != {'b': 999}
   E  Left contains 1 more item:
   E  {'c': 3}
+
+--- FAIL  test_fail_list                                   0.5ms
+  E  AssertionError: assert ['Global Launch'] == ['Global Launches']
+  E  At index 0 diff: 'Global Launch' != 'Global Launches'
 ```
 
-### Approximate equality (pytest.approx)
+</details>
+
+<details>
+<summary><strong>Approximate equality (pytest.approx)</strong></summary>
 
 ```
 --- FAIL  test_fail_approx_abs                             0.2ms
@@ -181,9 +206,19 @@ pytest -p no:pytest_glaze tests/
   E  comparison failed
   E  Obtained: 3.141592653589793
   E  Expected: 3.14 ± 0.001
+
+--- FAIL  test_fail_approx_list                            0.2ms
+  E  assert [0.3000000000...003] == approx([0.4 ± 1.0e-09])
+  E  comparison failed. Mismatched elements: 2 / 2:
+  E  Index | Obtained            | Expected
+  E  0     | 0.30000000000000004 | 0.4 ± 1.0e-09
+  E  1     | 3.3000000000000003  | 3.4 ± 1.0e-09
 ```
 
-### Skips, xfail, and xpass
+</details>
+
+<details>
+<summary><strong>Skips, xfail, and xpass</strong></summary>
 
 ```
 --- SKIP   test_skip_platform_conditional                  0.2ms
@@ -200,7 +235,10 @@ XFAIL renders in bright red — an expected failure is still a red signal
 worth tracking. XPASS renders in yellow — an unexpected pass is a surprise
 worth investigating, but not an error.
 
-### Fixture errors
+</details>
+
+<details>
+<summary><strong>Fixture errors</strong></summary>
 
 ```
 --- PASS   test_error_in_fixture_teardown                  0.2ms
@@ -208,19 +246,32 @@ worth investigating, but not an error.
   E  RuntimeError: Teardown exploded intentionally
 ```
 
-### Captured output (shown only on failures)
+Setup and teardown errors are classified separately from test failures.
+A passing test body followed by a teardown ERROR both appear — neither is
+silently swallowed.
+
+</details>
+
+<details>
+<summary><strong>Captured output (shown only on failures)</strong></summary>
 
 ```
 --- FAIL  test_fail_with_stdout_and_stderr                 0.4ms
   E  AssertionError: intentional failure with stdout and stderr
   E  assert False
   ── Captured stdout call ──
-  stdout payload for combined capture test
+  stdout payload for this failure
   ── Captured stderr call ──
-  stderr payload for combined capture test
+  stderr payload for this failure
 ```
 
-### Per-file summaries
+Captured output sections are suppressed on passing tests and rendered
+inline on failures — no separate output block to hunt for.
+
+</details>
+
+<details>
+<summary><strong>Per-file summaries</strong></summary>
 
 ```
 tests/test_entities.py
@@ -238,49 +289,54 @@ tests/test_auth.py
 Total: 4 passed, 1 failed  in 0.42s
 ```
 
+</details>
+
 ---
 
 ## Noise suppression
 
 pytest-glaze automatically suppresses lines that add no value in compact
-output:
+output — before any line is rendered:
 
 - `Omitting N identical items, use -vv to show`
 - `Use -v to get more diff`
 - `Full diff:`
 
-These are filtered before rendering. The meaningful diff lines remain.
+The meaningful diff lines remain. The noise does not.
 
 ---
 
 ## Compatibility
 
-pytest-glaze is a pure formatter. It has no opinion on how you write your
-tests, which fixtures you use, or how you organize your suite. It works
-alongside:
+pytest-glaze is a pure formatter with no opinion on how you write your tests.
+It works alongside:
 
-- `pytest-cov` — coverage reporting is unaffected
-- `pytest-xdist` — parallel runs are supported
-- `pytest-mock`, `pytest-asyncio`, and any other plugin that doesn't
-  replace the terminal reporter
+- **pytest-cov** — coverage reporting is unaffected
+- **pytest-xdist** — parallel runs are supported
+- **pytest-mock**, **pytest-asyncio**, and any plugin that doesn't replace
+  the terminal reporter
 
-The one incompatibility: any other plugin that also replaces the terminal
-reporter (e.g. `pytest-rich`) will conflict. Use one formatter at a time.
+> **Note:** Any plugin that also replaces the terminal reporter (e.g.
+> `pytest-rich`) will conflict. Use one formatter at a time.
 
 ---
 
 ## Contributing
 
-pytest-glaze is currently a personal project. Pull requests are welcome —
-if you find a failure shape the formatter doesn't handle well, open an issue
-with the raw pytest output and I'll take a look.
+pytest-glaze is a personal project. If you find a failure shape the formatter
+doesn't handle well, open an issue with the raw `pytest` output and I'll take
+a look. Pull requests are welcome.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE) © [mikejmz24](https://github.com/mikejmz24)
 
 ---
 
-_pytest-glaze — because your test output deserves a coat of glaze._
+<div align="center">
+
+_pytest-glaze — because your test output deserves a coat of glaze._ 🏺
+
+</div>
