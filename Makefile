@@ -7,7 +7,7 @@ TESTS    := tests/
 # Core formatter flags.
 # -p no:terminal   → silence the default reporter
 # -p pytest_glaze → load our plugin (PYTHONPATH=. makes it importable)
-FMT := -p no:terminal -p pytest_glaze
+FMT := --glaze
 
 # Optional pass-through vars:
 #   make test SUITE=tests/test_entities.py   → single suite

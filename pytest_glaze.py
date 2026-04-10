@@ -1,5 +1,5 @@
 """
-pytest_glaze.py — Opinionated pytest output formatter.
+pytest_formatter.py — Opinionated pytest output formatter.
 
 Output style:
 
@@ -16,7 +16,7 @@ Output style:
   Total: 1 passed, 1 failed, 1 error, 1 skipped  in 0.12s
 
 Load via Makefile:
-    PYTHONPATH=. pytest -p no:terminal -p pytest_glaze [TARGET]
+    PYTHONPATH=. pytest -p no:terminal -p pytest_formatter [TARGET]
 """
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ def c_skip(t: str) -> str:
 
 def c_xfail(t: str) -> str:
     """Gray — expected failures."""
-    return _esc(_BRIGHT_RED, t)
+    return _esc(_GRAY, t)
 
 
 def c_xpass(t: str) -> str:
@@ -791,18 +791,67 @@ class FormatterPlugin:
 
 # ── Registration ──────────────────────────────────────────────────────────────
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Declare the --glaze flag that opts in to the formatter."""
+    group = parser.getgroup("terminal reporting")
+    group.addoption(
+        "--glaze",
+        action="store_true",
+        default=False,
+        help="Enable pytest-glaze compact, color-semantic output formatter.",
+    )
+
+
+@pytest.hookimpl(trylast=True)
 def pytest_configure(config: pytest.Config) -> None:
-    """Register the formatter plugin and a terminal-reporter stub if needed."""
+    """Activate glaze only when --glaze is explicitly requested.
+
+    ``trylast=True`` guarantees this runs after the default terminal reporter
+    has registered itself, so we can safely unregister it without racing
+    against load order.  This works for all activation paths — entry-point
+    auto-load, ``-p pytest_glaze``, and ``addopts = "--glaze"``.
+
+    When --glaze is passed:
+      1. The default terminal reporter is unregistered (if present) and the
+         terminal plugin is blocked so it cannot re-register.
+      2. FormatterPlugin is registered to handle all output hooks.
+      3. A TerminalReporterStub is registered so plugins that call
+         config.get_terminal_writer() (e.g. pytest-cov) do not crash.
+
+    When --glaze is absent the function returns immediately, leaving the
+    default pytest output pipeline completely untouched.
+    """
+    try:
+        enabled = config.getoption("--glaze")
+    except (ValueError, AttributeError):
+        # Options not yet available during very early plugin initialisation.
+        return
+
+    if not enabled:
+        return
+
+    # Unregister the default TerminalReporter if it was registered before us.
+    # Because we use trylast=True this is the normal case — terminal runs first,
+    # we clean up after it.
+    existing = config.pluginmanager.get_plugin("terminalreporter")
+    if existing is not None:
+        config.pluginmanager.unregister(existing)
+
+    # Block terminal so it cannot register again later.
+    if not config.pluginmanager.is_blocked("terminal"):
+        config.pluginmanager.set_blocked("terminal")
+
     _plugin_key = "_pytest_glaze_instance"
     if not config.pluginmanager.get_plugin(_plugin_key):
         config.pluginmanager.register(FormatterPlugin(), _plugin_key)
 
-    terminal_absent = not config.pluginmanager.get_plugin("terminalreporter")
-    if terminal_absent and _PytestTerminalWriter is not None:
+    # Register stub so config.get_terminal_writer() never raises.
+    if config.pluginmanager.get_plugin("terminalreporter") is None \
+            and _PytestTerminalWriter is not None:
         _writer_cls = _PytestTerminalWriter  # local binding — narrows type for Pyright
 
         class _TerminalReporterStub:  # pylint: disable=too-few-public-methods
-            """Exists only to satisfy config.get_terminal_writer()."""
+            """Satisfies config.get_terminal_writer() without rendering anything."""
 
             def __init__(self) -> None:
                 self._tw = _writer_cls(io.StringIO())
