@@ -25,9 +25,13 @@ _PATH := $(if $(SUITE),$(SUITE),$(TESTS))
 # Build the -k filter: prefer K, fall back to CASE.
 _KFLAG := $(if $(K),-k "$(K)",$(if $(CASE),-k "$(CASE)",))
 
+BDD_TESTS := tests/corpus/test_bdd.py \
+             tests/corpus/test_bdd_background.py \
+             tests/corpus/test_bdd_edge_cases.py
+
 # ── Primary targets ───────────────────────────────────────────────────────────
 
-.PHONY: test test-fast test-corpus test-raw help
+.PHONY: test test-fast test-corpus test_bdd test-unit test-raw help
 
 ## test           Run suite with custom output.
 ##                SUITE=, CASE=, K= for filtering.  ARGS= for raw pytest flags.
@@ -48,6 +52,12 @@ test-fast:
 ##                intentional failures are expected and correct.
 test-corpus:
 	@PYTHONPATH=. $(PYTEST) $(FMT) tests/corpus/ $(ARGS)
+
+## test-bdd       Run the full BDD corpus (all test_bdd*.py files).
+##                Requires pytest-bdd: uv add --dev pytest-bdd --native-tls
+##                Intentional failures and errors are expected.
+test-bdd:
+	@PYTHONPATH=. $(PYTEST) $(FMT) $(BDD_TESTS) $(ARGS)
 
 ## test-unit      Run unit tests only (test_parsers, test_colorizer, test_plugin).
 ##                No intentional failures — clean pass/fail signal.
