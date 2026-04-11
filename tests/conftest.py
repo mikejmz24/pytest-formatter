@@ -15,3 +15,5 @@ def force_color(monkeypatch):
     on them — it only matters for test_colorizer.py.
     """
     monkeypatch.setattr(pytest_glaze, "_NO_COLOR", False)
+
+    something to delete

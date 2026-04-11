@@ -29,6 +29,10 @@ from typing import Dict, List, Optional, Tuple
 
 import pytest
 
+# Set in pytest_configure when --glaze is active; None otherwise.
+# BDD hook functions below gate on this so they are no-ops without --glaze.
+_glaze_plugin: Optional["FormatterPlugin"] = None
+
 try:
     from _pytest._io import TerminalWriter as _PytestTerminalWriter
 except ImportError:  # pragma: no cover — only missing outside a pytest install
@@ -90,7 +94,7 @@ def c_skip(t: str) -> str:
 
 def c_xfail(t: str) -> str:
     """Gray — expected failures."""
-    return _esc(_GRAY, t)
+    return _esc(_BRIGHT_RED, t)
 
 
 def c_xpass(t: str) -> str:
@@ -149,6 +153,7 @@ _SUMMARY_FMT = {
     "xfailed": lambda n: c_xfail(f"{n} xfailed"),
     "xpassed": lambda n: c_xpass(f"{n} xpassed"),
 }
+
 
 # ── Domain ────────────────────────────────────────────────────────────────────
 
@@ -706,6 +711,7 @@ class FormatterPlugin:
                 for ln in content.rstrip().splitlines():
                     self._p(f"    {ln}")
 
+
     # ── pytest hooks ──────────────────────────────────────────────────────────
 
     @pytest.hookimpl(tryfirst=True)
@@ -788,7 +794,6 @@ class FormatterPlugin:
         self._p(f"{c_bold('Total:')} {summary}  {c_dim(f'in {elapsed:.2f}s')}")
         self._p()
 
-
 # ── Registration ──────────────────────────────────────────────────────────────
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -843,7 +848,10 @@ def pytest_configure(config: pytest.Config) -> None:
 
     _plugin_key = "_pytest_glaze_instance"
     if not config.pluginmanager.get_plugin(_plugin_key):
-        config.pluginmanager.register(FormatterPlugin(), _plugin_key)
+        plugin = FormatterPlugin()
+        config.pluginmanager.register(plugin, _plugin_key)
+        global _glaze_plugin          # ← add
+        _glaze_plugin = plugin        # ← add
 
     # Register stub so config.get_terminal_writer() never raises.
     if config.pluginmanager.get_plugin("terminalreporter") is None \
