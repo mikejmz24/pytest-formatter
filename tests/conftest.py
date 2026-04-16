@@ -16,4 +16,3 @@ def force_color(monkeypatch):
     """
     monkeypatch.setattr(pytest_glaze, "_NO_COLOR", False)
 
-    something to delete

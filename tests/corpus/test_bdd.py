@@ -211,5 +211,3 @@ def apply_both(promos: list) -> int:
 @then("the higher discount wins")
 def higher_discount_wins(discount: int) -> None:
     assert discount == 20  # fails — returns 30
-
-something that will fail 

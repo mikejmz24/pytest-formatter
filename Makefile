@@ -31,7 +31,8 @@ BDD_TESTS := tests/corpus/test_bdd.py \
 
 # ── Primary targets ───────────────────────────────────────────────────────────
 
-.PHONY: test test-fast test-corpus test_bdd test-unit test-raw help
+.PHONY: test test-fast test-corpus test-bdd test-bdd-gherkin test-bdd-gherkin-vv \
+        test-bdd-json test-bdd-json-expanded test-unit test-raw help
 
 ## test           Run suite with custom output.
 ##                SUITE=, CASE=, K= for filtering.  ARGS= for raw pytest flags.
@@ -53,11 +54,31 @@ test-fast:
 test-corpus:
 	@PYTHONPATH=. $(PYTEST) $(FMT) tests/corpus/ $(ARGS)
 
-## test-bdd       Run the full BDD corpus (all test_bdd*.py files).
-##                Requires pytest-bdd: uv add --dev pytest-bdd --native-tls
-##                Intentional failures and errors are expected.
+## test-bdd           Run BDD corpus through glaze formatter.
 test-bdd:
 	@PYTHONPATH=. $(PYTEST) $(FMT) $(BDD_TESTS) $(ARGS)
+
+## test-bdd-gherkin   BDD corpus with pytest-bdd's built-in Gherkin terminal
+##                    reporter. Shows Feature/Scenario/step lines natively.
+##                    Use -v for step names, -vv for full detail.
+test-bdd-gherkin:
+	@PYTHONPATH=. $(PYTEST) --gherkin-terminal-reporter -v $(BDD_TESTS) $(ARGS)
+
+## test-bdd-gherkin-vv  Same but with full diff output on failures.
+test-bdd-gherkin-vv:
+	@PYTHONPATH=. $(PYTEST) --gherkin-terminal-reporter -vv $(BDD_TESTS) $(ARGS)
+
+## test-bdd-json      BDD corpus with Cucumber JSON output.
+##                    Pipe-friendly — useful for CI integrations.
+test-bdd-json:
+	@PYTHONPATH=. $(PYTEST) --cucumber-json=bdd-report.json $(BDD_TESTS) $(ARGS)
+	@echo "Report written to bdd-report.json"
+
+## test-bdd-json-expanded  Cucumber JSON with Scenario Outlines expanded
+##                          into individual scenarios.
+test-bdd-json-expanded:
+	@PYTHONPATH=. $(PYTEST) --cucumber-json-expanded=bdd-report-expanded.json $(BDD_TESTS) $(ARGS)
+	@echo "Report written to bdd-report-expanded.json"
 
 ## test-unit      Run unit tests only (test_parsers, test_colorizer, test_plugin).
 ##                No intentional failures — clean pass/fail signal.
