@@ -615,6 +615,8 @@ class FormatterPlugin:
         self._bdd_last_step_idx: int                      = -1   # index of last _BDDStep in buf
         self._bdd_scenario_names: Dict[str, str]          = {}   # nodeid → scenario name (for skips)
         self._bdd_cur_feature:   Optional[str] = None  # tracks printed feature header
+        self._bdd_any_feature_printed: bool  = False
+        self._bdd_pending_file:        Optional[str] = None
 
     # ── I/O ───────────────────────────────────────────────────────────────────
 
@@ -692,7 +694,7 @@ class FormatterPlugin:
             self._p()
         self._cur_file          = file
         self._file_buf          = []
-        self._bdd_cur_feature   = None   # reset so Feature header re-prints for new file
+        # self._bdd_cur_feature   = None   # reset so Feature header re-prints for new file
         self._bdd_first_in_file = True
         self._p(file)
 
@@ -721,6 +723,9 @@ class FormatterPlugin:
         # BDD scenario rendered step-by-step — flush buffered lines with
         # any xfail/xpass correction applied to the last step.
         if r.nodeid in self._bdd_handled:
+            if self._bdd_pending_file:
+                self._open_file_group(self._bdd_pending_file)
+                self._bdd_pending_file = None
             self._bdd_flush_scenario(r.outcome, r.short_msg)
             return
 
@@ -817,20 +822,23 @@ class FormatterPlugin:
     # ── BDD delegate methods (called by module-level hooks) ───────────────────
 
     def _bdd_before_scenario(self, request, feature, scenario) -> None:
+        # Store file for _open_file_group — called later in _render_result
+        # outside pytest's capture context so self._p() is not swallowed.
         file, _ = self.split_nodeid(request.node.nodeid)
-        self._open_file_group(file)
+        self._bdd_pending_file = file
 
         feature_name = getattr(feature, "name", "")
         self._bdd_scenario_buf = []
 
         if feature_name and feature_name != self._bdd_cur_feature:
-            if not self._bdd_first_in_file:
-                self._bdd_scenario_buf.append("")   # blank line — flushed later
+            if self._bdd_any_feature_printed:
+                self._bdd_scenario_buf.append("")
             self._bdd_scenario_buf.append(c_bdd_feature(f"  Feature: {feature_name}"))
-            self._bdd_cur_feature   = feature_name
-            self._bdd_first_in_file = False
+            self._bdd_cur_feature         = feature_name
+            self._bdd_any_feature_printed = True
+            self._bdd_first_in_file       = False
         elif not self._bdd_first_in_file:
-            self._bdd_scenario_buf.append("")       # blank line between scenarios
+            self._bdd_scenario_buf.append("")
 
         self._bdd_first_in_file = False
         self._bdd_scenario_buf.append(c_bdd_scenario(f"    Scenario: {scenario.name}"))
