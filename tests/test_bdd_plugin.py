@@ -418,3 +418,208 @@ class TestBddBeforeStep:
         p._bdd_before_step(_request(), feature, _scenario(), step, None)
         strings = _buf_strings(p)
         assert not any("Background:" in s for s in strings)
+
+# ── _bdd_step_func_lookup_error ───────────────────────────────────────────────
+
+class TestBddStepFuncLookupError:
+    """Tests for _bdd_step_func_lookup_error — missing step definition."""
+
+    def _run(self, p, step=None, nodeid="tests/bdd/test_edge_cases.py::test_missing_step"):
+        import time
+        step = step or _step("When", "when", "a step that has no implementation")
+        p._bdd_step_t0[id(step)] = time.monotonic()
+        p._bdd_step_func_lookup_error(
+            _request(nodeid), _feature(), _scenario(), step,
+            Exception("StepDefinitionNotFoundError: Step definition is not found")
+        )
+        return step
+
+    def test_outcome_is_error(self):
+        p = _plugin()
+        p._bdd_scenario_buf = []
+        self._run(p)
+        assert _buf_steps(p)[0].outcome == "error"
+
+    def test_short_msg_captured(self):
+        p = _plugin()
+        p._bdd_scenario_buf = []
+        self._run(p)
+        assert _buf_steps(p)[0].short_msg is not None
+
+    def test_nodeid_added_to_handled(self):
+        p = _plugin()
+        p._bdd_scenario_buf = []
+        self._run(p)
+        assert "tests/bdd/test_edge_cases.py::test_missing_step" in p._bdd_handled
+
+
+# ── blank line spacing ────────────────────────────────────────────────────────
+
+class TestBddBlankLineSpacing:
+    """Blank line rules between features and scenarios."""
+
+    def test_no_extra_blank_line_at_file_boundary(self):
+        """_open_file_group prints one blank line between files.
+        The buffer must NOT add a second one on top of it."""
+        p = _plugin()
+        # Simulate: file group already open, feature already printed
+        p._cur_file              = "tests/bdd/test_authentication.py"
+        p._bdd_cur_feature       = "User authentication flows"
+        p._bdd_any_feature_printed = True
+        # Now simulate new file group opening via _render_result path
+        # _bdd_first_in_file must be True after _open_file_group resets it
+        p._bdd_first_in_file = True
+        # New feature scenario: blank line must be buffered (once)
+        p._bdd_before_scenario(
+            _request("tests/bdd/test_checkout.py::test_guest_purchase"),
+            _feature("Shopping cart checkout"),
+            _scenario("Guest completes a purchase")
+        )
+        blank_lines = [s for s in _buf_strings(p) if s == ""]
+        # Exactly one blank line in the buffer (the between-feature one)
+        assert len(blank_lines) == 1
+
+    def test_blank_line_between_scenarios_same_feature(self):
+        """After first scenario flushes, _bdd_first_in_file is reset to True
+        by _open_file_group. Second scenario must still get a blank line."""
+        p = _plugin()
+        p._bdd_cur_feature       = "Shopping cart checkout"
+        p._bdd_any_feature_printed = True
+        # Simulate what happens after first scenario flushes and
+        # _open_file_group runs (same file → no-op on cur_file,
+        # but _bdd_first_in_file stays False since same file)
+        p._bdd_first_in_file = False
+        p._bdd_before_scenario(
+            _request("tests/bdd/test_checkout.py::test_gift_card"),
+            _feature("Shopping cart checkout"),
+            _scenario("Logged-in user applies a gift card")
+        )
+        strings = _buf_strings(p)
+        assert "" in strings
+
+# ── pytest_collection_finish: BDD scenario name indexing ─────────────────────
+
+class TestBddScenarioNameIndexing:
+    """Tests for scenario name extraction from collected BDD items."""
+
+    def _make_item(self, nodeid, doc=None, scenario_obj=None):
+        fn = SimpleNamespace(
+            __doc__      = doc,
+            __scenario__ = scenario_obj,
+        )
+        return SimpleNamespace(nodeid=nodeid, function=fn)
+
+    def test_scenario_name_from_scenario_obj(self):
+        """__scenario__.name takes priority over __doc__."""
+        p = _plugin()
+        scenario_obj = SimpleNamespace(name="Guest completes a purchase")
+        item = self._make_item(
+            "tests/bdd/test_checkout.py::test_guest_purchase",
+            doc="features/checkout.feature: Guest completes a purchase",
+            scenario_obj=scenario_obj,
+        )
+        session = SimpleNamespace(items=[item])
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p.pytest_collection_finish(session)
+        assert p._bdd_scenario_names["tests/bdd/test_checkout.py::test_guest_purchase"] == \
+            "Guest completes a purchase"
+
+    def test_scenario_name_from_doc_fallback(self):
+        """When __scenario__ is None, name parsed from __doc__."""
+        p = _plugin()
+        item = self._make_item(
+            "tests/bdd/test_checkout.py::test_unimplemented_feature",
+            doc="features/checkout.feature: Feature not yet implemented",
+            scenario_obj=None,
+        )
+        session = SimpleNamespace(items=[item])
+        p._p = lambda t="": None
+        p.pytest_collection_finish(session)
+        assert p._bdd_scenario_names[
+            "tests/bdd/test_checkout.py::test_unimplemented_feature"
+        ] == "Feature not yet implemented"
+
+    def test_non_bdd_item_not_indexed(self):
+        """Regular pytest items with no __doc__ or __scenario__ must be ignored."""
+        p = _plugin()
+        item = self._make_item(
+            "tests/test_parsers.py::test_something",
+            doc=None,
+            scenario_obj=None,
+        )
+        session = SimpleNamespace(items=[item])
+        p._p = lambda t="": None
+        p.pytest_collection_finish(session)
+        assert "tests/test_parsers.py::test_something" not in p._bdd_scenario_names
+
+    def test_doc_without_colon_separator_not_indexed(self):
+        """__doc__ that doesn't match 'file: Scenario name' format must be ignored."""
+        p = _plugin()
+        item = self._make_item(
+            "tests/bdd/test_checkout.py::test_something",
+            doc="just a plain docstring",
+            scenario_obj=None,
+        )
+        session = SimpleNamespace(items=[item])
+        p._p = lambda t="": None
+        p.pytest_collection_finish(session)
+        assert "tests/bdd/test_checkout.py::test_something" not in p._bdd_scenario_names
+
+# Add to test_bdd_plugin.py
+
+class TestBddSkipRendering:
+    """Skip renders as Scenario line indented under Feature, not at file level."""
+
+    def test_skip_shows_scenario_name_not_function_name(self):
+        p = _plugin()
+        p._bdd_scenario_names["tests/bdd/test_checkout.py::test_unimplemented_feature"] = \
+            "Feature not yet implemented"
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        from pytest_glaze import TestResult
+        r = TestResult(
+            nodeid   = "tests/bdd/test_checkout.py::test_unimplemented_feature",
+            file     = "tests/bdd/test_checkout.py",
+            name     = "test_unimplemented_feature",
+            outcome  = "skipped",
+            duration = 0.1,
+            short_msg= "Skipped: feature flag not enabled in CI",
+        )
+        p._render_result(r)
+        assert any("Feature not yet implemented" in line for line in printed)
+        assert not any("test_unimplemented_feature" in line for line in printed)
+
+    def test_skip_indented_as_scenario(self):
+        p = _plugin()
+        p._bdd_scenario_names["tests/bdd/test_checkout.py::test_skip"] = "My Scenario"
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        from pytest_glaze import TestResult
+        r = TestResult(
+            nodeid="tests/bdd/test_checkout.py::test_skip",
+            file="tests/bdd/test_checkout.py",
+            name="test_skip",
+            outcome="skipped",
+            duration=0.1,
+            short_msg="Skipped: reason",
+        )
+        p._render_result(r)
+        skip_line = next(l for l in printed if "My Scenario" in l)
+        assert skip_line.startswith("  ")  # indented under Feature level
+
+
+class TestBddStepNotFoundMessage:
+    """StepDefinitionNotFoundError message trimmed to first sentence only."""
+
+    def test_step_not_found_message_trimmed(self):
+        long_msg = (
+            'StepDefinitionNotFoundError: Step definition is not found: '
+            'When "a step that has no implementation". '
+            'Line 18 in scenario "Step with no implementation" '
+            'in the feature "/path/to/edge_cases.feature"'
+        )
+        msg = FormatterPlugin._extract_exception_msg(Exception(long_msg))
+        assert "Line 18" not in msg
+        assert "/path/to" not in msg
+        assert "Step definition is not found" in msg

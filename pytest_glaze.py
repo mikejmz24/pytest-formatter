@@ -695,7 +695,7 @@ class FormatterPlugin:
         self._cur_file          = file
         self._file_buf          = []
         # self._bdd_cur_feature   = None   # reset so Feature header re-prints for new file
-        self._bdd_first_in_file = True
+        # self._bdd_first_in_file = True
         self._p(file)
 
     def _flush_file_summary(self) -> None:
@@ -714,7 +714,7 @@ class FormatterPlugin:
         # also resets it for the new file, but clearing at the flush site makes
         # the ownership clear and prevents subtle bugs if the call order changes.
         self._file_buf = []
-        self._bdd_first_in_file = True # reset spacing flag for new file
+        # self._bdd_first_in_file = True # reset spacing flag for new file
 
     # ── Per-result rendering ──────────────────────────────────────────────────
 
@@ -774,6 +774,9 @@ class FormatterPlugin:
             return type(exc).__name__ or None
         if not isinstance(exc, AssertionError):
             raw = f"{type(exc).__name__}: {raw}"
+        # Trim verbose StepDefinitionNotFoundError to first sentence only
+        if "StepDefinitionNotFoundError" in raw and ". " in raw:
+            raw = raw[:raw.index(". ") + 1]
         lines = [ln for ln in raw.splitlines() if ln.strip()][:MAX_E_LINES]
         return "\n".join(lines) or None
 
@@ -873,6 +876,19 @@ class FormatterPlugin:
         self._bdd_scenario_buf.append(bdd_step)
         self._bdd_last_step_idx = len(self._bdd_scenario_buf) - 1
         self._bdd_handled.add(request.node.nodeid)
+
+    def _bdd_step_func_lookup_error(
+        self, request, feature, scenario, step, exception
+    ) -> None:
+        t0        = self._bdd_step_t0.pop(id(step), time.monotonic())
+        duration  = time.monotonic() - t0
+        short_msg = self._extract_exception_msg(exception)
+        bdd_step  = _BDDStep(step=step, outcome="error", duration=duration, short_msg=short_msg)
+        self._bdd_scenario_buf.append(bdd_step)
+        self._bdd_last_step_idx = len(self._bdd_scenario_buf) - 1
+        self._bdd_handled.add(request.node.nodeid)
+
+
     # ── pytest hooks ──────────────────────────────────────────────────────────
 
     @pytest.hookimpl(tryfirst=True)
@@ -891,10 +907,16 @@ class FormatterPlugin:
         # Build nodeid → scenario name map so skipped BDD tests can be
         # rendered as "--- SKIP  Scenario: …" rather than "--- SKIP  test_fn"
         for item in session.items:
-            fn       = getattr(item, "function", None)
-            scenario = getattr(fn, "_pytest_bdd_scenario", None)
-            if scenario is not None:
-                self._bdd_scenario_names[item.nodeid] = scenario.name
+            fn = getattr(item, "function", None)
+            if fn is None:
+                continue
+            scenario_obj = getattr(fn, "__scenario__", None)
+            if scenario_obj is not None:
+                self._bdd_scenario_names[item.nodeid] = getattr(scenario_obj, "name", None) or str(scenario_obj)
+            elif fn.__doc__:
+                parts = fn.__doc__.split(": ", 1)
+                if len(parts) == 2:
+                    self._bdd_scenario_names[item.nodeid] = parts[1]
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_collectreport(self, report) -> None:
@@ -990,6 +1012,15 @@ def pytest_bdd_step_error(
     if _glaze_plugin is not None:
         _glaze_plugin._bdd_step_error(
             request, feature, scenario, step, step_func, step_func_args, exception
+        )
+
+
+def pytest_bdd_step_func_lookup_error(
+    request, feature, scenario, step, exception
+) -> None:
+        if _glaze_plugin is not None:
+            _glaze_plugin._bdd_step_func_lookup_error(
+            request, feature, scenario, step, exception
         )
 
 # ── Registration ──────────────────────────────────────────────────────────────
