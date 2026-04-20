@@ -7,6 +7,7 @@ Covers:
   - Session-scoped fixtures shared across scenarios
 """
 from __future__ import annotations
+import pytest
 
 from pytest_bdd import given, scenario, then
 
@@ -36,3 +37,7 @@ def test_session_config() -> None: ...
 @then("the app version is 1.0.0")
 def assert_app_version(app: dict) -> None:
     assert app["config"]["version"] == "1.0.0"
+
+@pytest.mark.usefixtures("app_config")
+@scenario("features/shared.feature", "Scenario with injected fixture via usefixtures")
+def test_usefixtures_scenario() -> None: ...

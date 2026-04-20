@@ -31,3 +31,9 @@ Feature: Shared steps and hooks
   Scenario: Session config is consistent across scenarios
     Given the application is running
     Then the app version is 1.0.0
+
+# ── @pytest.mark.usefixtures on scenario ─────────────────────────────────
+  Scenario: Scenario with injected fixture via usefixtures
+    Given the application is running
+    When a health check is performed
+    Then the service is healthy

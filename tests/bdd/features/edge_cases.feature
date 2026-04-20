@@ -27,3 +27,9 @@ Feature: Edge cases and special outcomes
     Then the status is success
     And the body is not empty
     But the error field is null
+
+# ── Fixture teardown failure ──────────────────────────────────────────────
+  Scenario: Fixture teardown fails after passing steps
+    Given a resource that fails on cleanup
+    When the resource is used successfully
+    Then the result is valid

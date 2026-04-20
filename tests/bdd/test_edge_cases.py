@@ -116,3 +116,25 @@ def body_not_empty(system: dict) -> None:
 @then("the error field is null")   # But — type inherits "then" → green
 def error_field_null(system: dict) -> None:
     assert system["error"] is None
+
+
+@scenario("features/edge_cases.feature", "Fixture teardown fails after passing steps")
+def test_teardown_failure() -> None: ...
+
+
+@given("a resource that fails on cleanup", target_fixture="leaky_resource")
+def leaky_resource() -> dict:
+    resource = {"data": "ok", "cleaned": False}
+    yield resource
+    # Teardown — intentional failure
+    raise RuntimeError("cleanup failed: could not release resource lock")
+
+
+@when("the resource is used successfully")
+def use_resource(leaky_resource: dict) -> None:
+    leaky_resource["used"] = True
+
+
+@then("the result is valid")
+def result_is_valid(leaky_resource: dict) -> None:
+    assert leaky_resource["used"] is True

@@ -160,7 +160,7 @@ _OUTCOME_COLOR = {
 _SUMMARY_FMT = {
     "passed":  lambda n: c_pass(f"{n} passed"),
     "failed":  lambda n: c_fail(f"{n} failed"),
-    "error":   lambda n: c_error(f"{n} errors"),
+    "error":   lambda n: c_error(f"{n} error" if n == 1 else f"{n} errors"),
     "skipped": lambda n: c_skip(f"{n} skipped"),
     "xfailed": lambda n: c_xfail(f"{n} xfailed"),
     "xpassed": lambda n: c_xpass(f"{n} xpassed"),
@@ -723,9 +723,18 @@ class FormatterPlugin:
 
     def _render_result(self, r: TestResult) -> None:
         """Print one test result line, inline E lines, and captured sections."""
-        # BDD scenario rendered step-by-step — flush buffered lines with
-        # any xfail/xpass correction applied to the last step.
         if r.nodeid in self._bdd_handled:
+            if r.outcome == "error":
+                # Teardown/setup error on an already-rendered BDD scenario.
+                # The scenario itself rendered correctly — append a teardown error line.
+                self._p(f"    {c_error('---')} {_BADGE['error']}  {c_error('teardown failed')}{c_dim(f'  {r.duration * 1000:.1f}ms')}")
+                if r.short_msg:
+                    lines = [ln for ln in r.short_msg.splitlines()
+                             if not LineColorizer.is_noise(ln)]
+                    for i, line in enumerate(lines):
+                        colored = LineColorizer.color_e_line(line, "error", is_first=i == 0)
+                        self._p(f"      {c_emsg('E')}  {colored}")
+                return
             if self._bdd_pending_file:
                 self._open_file_group(self._bdd_pending_file)
                 self._bdd_pending_file = None
@@ -735,6 +744,20 @@ class FormatterPlugin:
         # Skipped BDD test — before_scenario never fired so buffer is empty.
         # Render a single "--- SKIP  Scenario: …" line instead of the fn name.
         if r.outcome == "skipped" and r.nodeid in self._bdd_scenario_names:
+            self._open_file_group(r.file)
+
+            feature_name = self._bdd_scenario_names.get(r.nodeid + "__feature__", "")
+            if feature_name and feature_name != self._bdd_cur_feature:
+                if self._bdd_any_feature_printed:
+                    self._p()
+                self._p(c_bdd_feature(f"  Feature: {feature_name}"))
+                self._bdd_cur_feature         = feature_name
+                self._bdd_any_feature_printed = True
+
+            # Add blank line if previous scenario was full-step
+            if self._bdd_last_was_full_step:
+                self._p()
+
             color_fn      = _OUTCOME_COLOR["skipped"]
             badge         = _BADGE["skipped"]
             scenario_name = self._bdd_scenario_names[r.nodeid]
@@ -742,6 +765,7 @@ class FormatterPlugin:
             if r.short_msg:
                 colored = LineColorizer.color_e_line(r.short_msg, "skipped", is_first=True)
                 self._p(f"      {c_emsg('E')}  {colored}")
+            self._bdd_last_was_full_step = False
             return
 
         # ── Normal (non-BDD) rendering ────────────────────────────────────────
@@ -948,6 +972,9 @@ class FormatterPlugin:
             scenario_obj = getattr(fn, "__scenario__", None)
             if scenario_obj is not None:
                 self._bdd_scenario_names[item.nodeid] = getattr(scenario_obj, "name", None) or str(scenario_obj)
+                feature = getattr(scenario_obj, "feature", None)
+                if feature:
+                    self._bdd_scenario_names[item.nodeid + "__feature__"] = getattr(feature, "name", "")
             elif fn.__doc__:
                 parts = fn.__doc__.split(": ", 1)
                 if len(parts) == 2:

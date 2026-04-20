@@ -850,3 +850,98 @@ class TestBddCompactSpacing:
         p._p = lambda t="": printed.append(t)
         p._bdd_flush_scenario("passed", None)
         assert printed[0] == ""  # blank line printed before compact scenario line
+
+
+class TestBddSkipFeatureHeader:
+    """Skip renders Feature header when it hasn't been printed yet."""
+
+    def test_skip_prints_feature_header_if_new(self):
+        p = _plugin()
+        p._bdd_scenario_names[
+            "tests/bdd/test_checkout.py::test_unimplemented_feature"
+        ] = "Feature not yet implemented"
+        p._bdd_scenario_names[
+            "tests/bdd/test_checkout.py::test_unimplemented_feature__feature__"
+        ] = "Shopping cart checkout"
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        from pytest_glaze import TestResult
+        r = TestResult(
+            nodeid   = "tests/bdd/test_checkout.py::test_unimplemented_feature",
+            file     = "tests/bdd/test_checkout.py",
+            name     = "test_unimplemented_feature",
+            outcome  = "skipped",
+            duration = 0.1,
+            short_msg= "Skipped: feature flag not enabled in CI",
+        )
+        p._render_result(r)
+        assert any("Shopping cart checkout" in l for l in printed)
+        assert any("Feature not yet implemented" in l for l in printed)
+
+    def test_skip_no_duplicate_feature_header(self):
+        """If feature already printed, skip must not reprint it."""
+        p = _plugin()
+        p._bdd_cur_feature       = "Shopping cart checkout"
+        p._bdd_any_feature_printed = True
+        p._bdd_scenario_names[
+            "tests/bdd/test_checkout.py::test_unimplemented_feature"
+        ] = "Feature not yet implemented"
+        p._bdd_scenario_names[
+            "tests/bdd/test_checkout.py::test_unimplemented_feature__feature__"
+        ] = "Shopping cart checkout"
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        from pytest_glaze import TestResult
+        r = TestResult(
+            nodeid   = "tests/bdd/test_checkout.py::test_unimplemented_feature",
+            file     = "tests/bdd/test_checkout.py",
+            name     = "test_unimplemented_feature",
+            outcome  = "skipped",
+            duration = 0.1,
+            short_msg= "Skipped: reason",
+        )
+        p._render_result(r)
+        feature_lines = [l for l in printed if "Shopping cart checkout" in l]
+        assert len(feature_lines) == 0
+
+
+# ── teardown error rendering ──────────────────────────────────────────────────
+
+class TestBddTeardownError:
+    """Teardown errors on BDD-handled nodeids render as standalone ERROR lines."""
+
+    def test_teardown_error_renders_after_scenario(self):
+        p = _plugin()
+        p._bdd_handled.add("tests/bdd/test_edge_cases.py::test_teardown_failure")
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        from pytest_glaze import TestResult
+        r = TestResult(
+            nodeid   = "tests/bdd/test_edge_cases.py::test_teardown_failure",
+            file     = "tests/bdd/test_edge_cases.py",
+            name     = "test_teardown_failure",
+            outcome  = "error",
+            duration = 0.1,
+            short_msg= "RuntimeError: cleanup failed: could not release resource lock",
+        )
+        p._render_result(r)
+        assert any("teardown" in l.lower() for l in printed)
+        assert any("RuntimeError" in l for l in printed)
+
+    def test_teardown_error_does_not_reflush_scenario(self):
+        """Teardown error must not trigger _bdd_flush_scenario — buffer is empty."""
+        p = _plugin()
+        p._bdd_handled.add("tests/bdd/test_edge_cases.py::test_teardown_failure")
+        p._bdd_scenario_buf = []  # already flushed
+        p._p = lambda t="": None
+        from pytest_glaze import TestResult
+        r = TestResult(
+            nodeid   = "tests/bdd/test_edge_cases.py::test_teardown_failure",
+            file     = "tests/bdd/test_edge_cases.py",
+            name     = "test_teardown_failure",
+            outcome  = "error",
+            duration = 0.1,
+            short_msg= "RuntimeError: cleanup failed",
+        )
+        p._render_result(r)
+        assert p._bdd_scenario_buf == []  # buffer untouched

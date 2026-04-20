@@ -57,8 +57,9 @@ _BDD_KFLAG := $(if $(SCENARIO),-k "$(SCENARIO)",$(if $(FEATURE),-k "$(FEATURE)",
 
 # ── Primary targets ───────────────────────────────────────────────────────────
 
-.PHONY: test test-fast test-corpus test-bdd test-bdd-gherkin test-bdd-gherkin-vv \
-        test-bdd-json test-bdd-json-expanded test-unit test-raw help
+.PHONY: test test-fast test-corpus test-bdd test-bdd-steps test-bdd-gherkin \
+				test-bdd-gherkin-vv test-bdd-json test-bdd-json-expanded \
+				test-unit test-raw help
 
 ## test              Run suite with custom output.
 ##                   SUITE=, CASE=, K= for filtering.  ARGS= for raw pytest flags.
@@ -81,8 +82,9 @@ test-fast:
 test-corpus:
 	@PYTHONPATH=. $(PYTEST) $(FMT) tests/corpus/ $(ARGS)
 
-## test-bdd          Run BDD corpus through glaze formatter.
-##                   FILE=, FEATURE=, SCENARIO= for filtering.
+## test-bdd          Run BDD corpus through glaze formatter (compact mode — default).
+##                   FILE=, SCENARIO= for filtering.
+##                   Use test-bdd-steps for full step-by-step output.
 ##                   Examples:
 ##                     make test-bdd
 ##                     make test-bdd FILE=test_bdd
@@ -102,6 +104,15 @@ test-bdd-gherkin:
 ##                      FILE=, FEATURE=, SCENARIO= for filtering.
 test-bdd-gherkin-vv:
 	@PYTHONPATH=. $(PYTEST) --gherkin-terminal-reporter -vv $(_BDD_PATH) $(_BDD_KFLAG) $(ARGS)
+
+## test-bdd-steps    Run BDD corpus with full step-by-step output (--bdd-steps flag).
+##                   FILE=, SCENARIO= for filtering.
+##                   Examples:
+##                     make test-bdd-steps
+##                     make test-bdd-steps FILE=test_checkout
+##                     make test-bdd-steps FILE=test_checkout SCENARIO="Guest completes a purchase"
+test-bdd-steps:
+	@PYTHONPATH=. $(PYTEST) $(FMT) --bdd-steps $(_BDD_PATH) $(_BDD_KFLAG) $(ARGS)
 
 ## test-bdd-json     Cucumber JSON output → bdd-report.json
 ##                   FILE=, FEATURE=, SCENARIO= for filtering.
