@@ -177,3 +177,4 @@ class TestExtractShort:
         r = SimpleNamespace(longrepr=_FakeLongrepr("\n\nFirst non-blank\nSecond\n"))
         result = FormatterPlugin.extract_short(r, "error")
         assert result == "First non-blank"
+

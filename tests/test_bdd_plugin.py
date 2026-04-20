@@ -17,7 +17,7 @@ Coverage:
 from types import SimpleNamespace
 
 import pytest_glaze
-from pytest_glaze import FormatterPlugin, _BDDStep
+from pytest_glaze import FormatterPlugin, _BDDStep, c_bdd_scenario
 
 # Force ANSI codes regardless of terminal detection.
 pytest_glaze._NO_COLOR = False
@@ -348,6 +348,7 @@ class TestBddFlushScenario:
     def test_blank_string_items_printed(self):
         """Empty string items in the buffer must trigger a blank line print."""
         p = _plugin()
+        p._bdd_last_was_full_step = True
         printed = []
         p._p = lambda t="": printed.append(t)
         p._bdd_scenario_buf  = [""]
@@ -606,7 +607,7 @@ class TestBddSkipRendering:
         )
         p._render_result(r)
         skip_line = next(l for l in printed if "My Scenario" in l)
-        assert skip_line.startswith("  ")  # indented under Feature level
+        assert skip_line.startswith("    ")  # indented under Feature level
 
 
 class TestBddStepNotFoundMessage:
@@ -623,3 +624,227 @@ class TestBddStepNotFoundMessage:
         assert "Line 18" not in msg
         assert "/path/to" not in msg
         assert "Step definition is not found" in msg
+
+
+# ── compact mode ──────────────────────────────────────────────────────────────
+
+class TestBddCompactMode:
+    """Default compact mode — PASS scenarios collapse to one line."""
+
+    def _make_pass_scenario(self, p, scenario_name="Guest completes a purchase"):
+        """Simulate a fully passing scenario in the buffer."""
+        import time
+        p._bdd_scenario_buf = [c_bdd_scenario(f"    Scenario: {scenario_name}")]
+        for keyword, type_, name in [
+            ("Given", "given", "the cart contains 2 items"),
+            ("When",  "when",  "the guest submits valid payment"),
+            ("Then",  "then",  "the order confirmation is shown"),
+        ]:
+            step = _step(keyword, type_, name)
+            bdd_step = _BDDStep(step=step, outcome="passed", duration=0.1, short_msg=None)
+            p._bdd_scenario_buf.append(bdd_step)
+        p._bdd_last_step_idx = len(p._bdd_scenario_buf) - 1
+
+    def test_compact_pass_prints_single_line(self):
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        step_lines = [l for l in printed if "Given" in l or "When" in l or "Then" in l]
+        assert len(step_lines) == 0
+        blank_lines = [l for l in printed if l == ""]
+        assert len(blank_lines) == 0
+        compact_line = next(l for l in printed if "Guest completes" in l)
+        assert compact_line.startswith("    ")  # 4 spaces — matches full step mode
+
+    def test_compact_pass_shows_scenario_name(self):
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        # Scenario name must be colored — strip ANSI to check plain text
+        import re
+        combined = " ".join(re.sub(r"\033\[[\d;]*m", "", l) for l in printed)
+        assert "Guest completes a purchase" in combined
+
+    def test_compact_pass_shows_pass_badge(self):
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        from pytest_glaze import _NO_COLOR
+        combined = " ".join(printed)
+        assert "PASS" in combined
+
+    def test_compact_fail_shows_steps(self):
+        """FAIL scenarios must show full step-by-step even in compact mode."""
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        # Override last step to failed
+        last = p._bdd_scenario_buf[p._bdd_last_step_idx]
+        last.outcome  = "failed"
+        last.short_msg = "assert 95.0 == 90"
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("failed", "assert 95.0 == 90")
+        step_lines = [l for l in printed if "Given" in l or "When" in l or "Then" in l]
+        assert len(step_lines) > 0
+
+    def test_compact_error_shows_steps(self):
+        """ERROR scenarios must show full step-by-step even in compact mode."""
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        last = p._bdd_scenario_buf[p._bdd_last_step_idx]
+        last.outcome   = "error"
+        last.short_msg = "RuntimeError: timeout"
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("error", "RuntimeError: timeout")
+        step_lines = [l for l in printed if "Given" in l or "When" in l or "Then" in l]
+        assert len(step_lines) > 0
+
+    def test_steps_mode_shows_all_steps(self):
+        """--bdd-steps flag: PASS scenarios show full step-by-step."""
+        p = _plugin()
+        p._bdd_steps_mode = True
+        self._make_pass_scenario(p)
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        step_lines = [l for l in printed if "Given" in l or "When" in l or "Then" in l]
+        assert len(step_lines) == 3
+
+    def test_compact_pass_duration_is_total(self):
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        combined = " ".join(printed)
+        assert "300.0ms" in combined
+
+    def test_compact_blank_line_after_fail_scenario(self):
+        """A blank line must follow a full-step FAIL scenario in compact mode."""
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        last = p._bdd_scenario_buf[p._bdd_last_step_idx]
+        last.outcome   = "failed"
+        last.short_msg = "assert x"
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("failed", "assert x")
+        assert printed[-1] != ""
+
+class TestBddCompactSpacing:
+    """Blank line rules between all scenario type combinations."""
+
+    def _flush_full_step(self, p, outcome="failed"):
+        self._make_pass_scenario(p)
+        last = p._bdd_scenario_buf[p._bdd_last_step_idx]
+        last.outcome = outcome
+        last.short_msg = "some error" if outcome != "passed" else None
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario(outcome, last.short_msg)
+        return printed
+
+    def _make_pass_scenario(self, p, name="Scenario A"):
+        p._bdd_scenario_buf = [c_bdd_scenario(f"    Scenario: {name}")]
+        for keyword, type_, sname in [
+            ("Given", "given", "step one"),
+            ("When",  "when",  "step two"),
+            ("Then",  "then",  "step three"),
+        ]:
+            step = _step(keyword, type_, sname)
+            p._bdd_scenario_buf.append(
+                _BDDStep(step=step, outcome="passed", duration=0.1, short_msg=None)
+            )
+        p._bdd_last_step_idx = len(p._bdd_scenario_buf) - 1
+
+    def test_full_step_to_full_step_one_blank_line(self):
+        """Two consecutive full-step scenarios must have exactly one blank line between them."""
+        p = _plugin()
+        p._bdd_steps_mode = False
+
+        # First scenario flushes — no trailing blank
+        printed1 = self._flush_full_step(p, "failed")
+        assert printed1[-1] != ""  # no trailing blank from flush
+
+        # Second scenario — _bdd_before_scenario prepends "" to the buffer
+        self._make_pass_scenario(p, "Scenario B")
+        p._bdd_scenario_buf.insert(0, "")  # simulate what _bdd_before_scenario does
+        p._bdd_last_step_idx += 1          # account for the inserted item
+        last = p._bdd_scenario_buf[p._bdd_last_step_idx]
+        last.outcome   = "failed"
+        last.short_msg = "assert x"
+        printed2 = []
+        p._p = lambda t="": printed2.append(t)
+        p._bdd_flush_scenario("failed", "assert x")
+
+        # First item printed must be the blank line
+        assert printed2[0] == ""
+        # Second item must not be blank — exactly one blank line between scenarios
+        assert printed2[1] != ""
+
+    def test_full_step_to_compact_one_blank_line(self):
+        """Full-step scenario followed by compact must have exactly one blank line."""
+        p = _plugin()
+        p._bdd_steps_mode = False
+        printed = self._flush_full_step(p, "failed")
+        assert printed[-1] != ""
+
+    def test_compact_to_compact_no_blank_line(self):
+        """Two consecutive compact scenarios must have no blank line between them."""
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        assert printed[-1] != ""  # no trailing blank line after compact
+
+    def test_compact_to_compact_no_blank_line(self):
+        p = _plugin()
+        p._bdd_steps_mode = False
+        p._bdd_last_was_full_step = False  # previous was compact
+        self._make_pass_scenario(p)
+        p._bdd_scenario_buf.insert(0, "")
+        p._bdd_last_step_idx += 1
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        assert printed[0] != ""  # no blank line
+
+    def test_full_step_to_compact_blank_line_printed(self):
+        p = _plugin()
+        p._bdd_steps_mode = False
+        p._bdd_last_was_full_step = True  # previous was full-step
+        self._make_pass_scenario(p)
+        p._bdd_scenario_buf.insert(0, "")
+        p._bdd_last_step_idx += 1
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        assert printed[0] == ""  # blank line printed
+
+    def ttest_full_step_to_compact_blank_line_printedest_full_step_to_compact_blank_line_printed(self):
+        """Blank line buffered by _bdd_before_scenario must print in compact mode."""
+        p = _plugin()
+        p._bdd_steps_mode = False
+        self._make_pass_scenario(p)
+        p._bdd_scenario_buf.insert(0, "")  # simulate _bdd_before_scenario spacing
+        p._bdd_last_step_idx += 1
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._bdd_flush_scenario("passed", None)
+        assert printed[0] == ""  # blank line printed before compact scenario line

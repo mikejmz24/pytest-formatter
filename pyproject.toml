@@ -60,5 +60,14 @@ disable = [
     "too-few-public-methods",
 ]
 
+[tool.pytest.ini_options]
+markers = [
+    "smoke: quick health check scenarios",
+    "regression: full regression suite scenarios",
+    "slow: slow running scenarios",
+    "bronze: bronze tier examples",
+    "gold: gold tier examples",
+]
+
 [tool.pylint.format]
 max-line-length = 100

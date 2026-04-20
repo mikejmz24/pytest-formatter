@@ -23,6 +23,7 @@ from __future__ import annotations
 import io
 import os
 import sys
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -617,6 +618,8 @@ class FormatterPlugin:
         self._bdd_cur_feature:   Optional[str] = None  # tracks printed feature header
         self._bdd_any_feature_printed: bool  = False
         self._bdd_pending_file:        Optional[str] = None
+        self._bdd_steps_mode: bool = False # True = --bdd-steps flsg, False = compact
+        self._bdd_last_was_full_step: bool = False
 
     # ── I/O ───────────────────────────────────────────────────────────────────
 
@@ -735,10 +738,10 @@ class FormatterPlugin:
             color_fn      = _OUTCOME_COLOR["skipped"]
             badge         = _BADGE["skipped"]
             scenario_name = self._bdd_scenario_names[r.nodeid]
-            self._p(f"  {color_fn('---')} {badge}  {c_dim('Scenario:')} {scenario_name}")
+            self._p(f"    {color_fn('---')} {badge}  {c_dim('Scenario:')} {scenario_name}")
             if r.short_msg:
                 colored = LineColorizer.color_e_line(r.short_msg, "skipped", is_first=True)
-                self._p(f"    {c_emsg('E')}  {colored}")
+                self._p(f"      {c_emsg('E')}  {colored}")
             return
 
         # ── Normal (non-BDD) rendering ────────────────────────────────────────
@@ -813,11 +816,43 @@ class FormatterPlugin:
                 last.outcome   = outcome
                 last.short_msg = short_msg  # carries the xfail reason
 
-        for item in self._bdd_scenario_buf:
-            if isinstance(item, str):
-                self._p(item)
-            else:
-                self._render_bdd_step_line(item)
+        # Compact mode: collapse PASS/SKIP/XFAIL/XPASS to a single scenario line
+        needs_steps = outcome in ("failed", "error") or self._bdd_steps_mode
+        if not needs_steps:
+            # Print string items (Feature/Scenario headers, blank lines)
+            # then a single compact scenario result line
+            total_dur = sum(
+                item.duration for item in self._bdd_scenario_buf
+                if isinstance(item, _BDDStep)
+            )
+            # Find the scenario header string (last string before first step)
+            scenario_line = next(
+                (item for item in reversed(self._bdd_scenario_buf)
+                 if isinstance(item, str) and "Scenario:" in item),
+                None
+            )
+
+            for item in self._bdd_scenario_buf:
+                if isinstance(item, str) and "Scenario:" not in item:
+                    if item == "" and not self._bdd_last_was_full_step:
+                        continue # <- supress blank between compact->compact
+                    self._p(item)  # blank lines and Feature headers
+            self._bdd_last_was_full_step = False
+
+            if scenario_line is not None:
+                badge    = _BADGE.get(outcome, outcome.upper())
+                color_fn = _OUTCOME_COLOR.get(outcome, c_dim)
+                dur      = c_dim(f"  {total_dur * 1000:.1f}ms")
+                # Extract plain scenario name from the colored string
+                plain = re.sub(r"\033\[[\d;]*m", "", scenario_line).strip()
+                self._p(f"    {color_fn('---')} {badge}  {color_fn(plain)}{dur}")
+        else:
+            for item in self._bdd_scenario_buf:
+                if isinstance(item, str):
+                    self._p(item)
+                else:
+                    self._render_bdd_step_line(item)
+            self._bdd_last_was_full_step = True # full-step scenario just ran
 
         self._bdd_scenario_buf  = []
         self._bdd_last_step_idx = -1
@@ -1034,7 +1069,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Enable pytest-glaze compact, color-semantic output formatter.",
     )
-
+    group.addoption(
+        "--bdd-steps",
+        action="store_true",
+        default=False,
+        help="Show full step-by-step BDD output. Default is compact (scenario lines only).",
+    )
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config: pytest.Config) -> None:
@@ -1079,6 +1119,7 @@ def pytest_configure(config: pytest.Config) -> None:
     existing = config.pluginmanager.get_plugin(_plugin_key)
     if existing is None:
         plugin = FormatterPlugin()
+        plugin._bdd_steps_mode = config.getoption("--bdd-steps", default=False)
         config.pluginmanager.register(plugin, _plugin_key)
     else:
         plugin = existing
