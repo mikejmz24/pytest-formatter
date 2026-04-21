@@ -39,6 +39,7 @@ _what failed, and what exactly was wrong?_
 | Zero extra dependencies       |        ✓         |       ✗ Rich required       |        ✓         |
 | Compact — one line per result |        ✗         |              ✗              |        ✓         |
 | Per-file summaries            |        ✗         |              ✗              |        ✓         |
+| BDD-aware (pytest-bdd)        |        ✗         |              ✗              |        ✓         |
 
 <br/>
 
@@ -293,6 +294,122 @@ Total: 4 passed, 1 failed  in 0.42s
 
 ---
 
+## BDD support (pytest-bdd)
+
+pytest-glaze has first-class support for [pytest-bdd](https://pytest-bdd.readthedocs.io/).
+Install pytest-bdd alongside pytest-glaze and BDD scenarios render with
+Feature/Scenario headers, per-step results, and the same color semantics
+as regular tests.
+
+### Requirements
+
+```bash
+pip install pytest-bdd
+```
+
+### Compact mode (default)
+
+By default pytest-glaze renders BDD scenarios in compact mode — one line
+per scenario. Failures and errors always show full step-by-step output so
+you can see exactly where things went wrong.
+
+```
+tests/bdd/test_checkout.py
+  Feature: Shopping cart checkout
+    --- PASS  Scenario: Guest completes a purchase          0.3ms
+    --- PASS  Scenario: Logged-in user applies a gift card  0.2ms
+
+    Scenario: Discount code reduces the cart total
+      --- PASS  Given the cart total is 100                 0.0ms
+      --- PASS  When a 10 percent discount is applied       0.0ms
+      --- FAIL  Then the cart total is 90                   0.1ms
+        E  assert 95.0 == 90
+
+    --- PASS  Scenario: Authenticated user checks out       0.1ms
+    --- SKIP  Scenario: Feature not yet implemented
+      E  Skipped: feature flag not enabled in CI
+    --- XFAIL Scenario: Known bug in promo stacking         0.1ms
+  => 3 passed, 1 failed, 1 skipped, 1 xfailed
+```
+
+### Full step-by-step mode (`--bdd-steps`)
+
+Pass `--bdd-steps` to see every step for every scenario:
+
+```bash
+pytest --glaze --bdd-steps tests/bdd/
+```
+
+```
+tests/bdd/test_checkout.py
+  Feature: Shopping cart checkout
+    Scenario: Guest completes a purchase
+      --- PASS  Given the cart contains 2 items             0.0ms
+      --- PASS  When the guest submits valid payment         0.0ms
+      --- PASS  Then the order confirmation is shown         0.0ms
+
+    Scenario: Logged-in user applies a gift card
+      --- PASS  Given the user is authenticated              0.0ms
+      --- PASS  And a gift card with 25 credit exists        0.0ms
+      --- PASS  When the gift card is redeemed               0.0ms
+      --- PASS  Then the balance is deducted from the total  0.0ms
+      --- PASS  But the original price is shown as reference 0.0ms
+```
+
+### Supported scenario types
+
+pytest-glaze handles every pytest-bdd scenario type:
+
+| Type                              | Rendering                                                 |
+| --------------------------------- | --------------------------------------------------------- |
+| All steps pass                    | Compact PASS line (default) or full steps (`--bdd-steps`) |
+| Failing assertion in Then         | Full steps with colored `assert X == Y` E line            |
+| Non-assertion error in When       | Full steps with `ExceptionType: message` E line           |
+| Error in Given (setup crash)      | ERROR on the Given step                                   |
+| Step not found                    | ERROR on the missing step, trimmed message                |
+| Skipped (`@pytest.mark.skip`)     | `--- SKIP  Scenario: …` with reason                       |
+| Skipped via Gherkin tag (`@skip`) | Same as above via `pytest_bdd_apply_tag`                  |
+| Xfail                             | Last step gets `--- XFAIL` badge                          |
+| Xpass                             | Last step gets `--- XPASS` badge                          |
+| Background steps                  | Dim `Background:` label before first background step      |
+| Scenario Outline                  | One compact/full line per example row                     |
+| Multiple example tables           | Each table's rows rendered independently                  |
+| Docstring arguments               | Transparent — steps render normally                       |
+| Datatable arguments               | Transparent — steps render normally                       |
+| Teardown failure                  | `--- ERROR  teardown failed` after the scenario line      |
+| Unicode scenario/step names       | Fully supported                                           |
+| Tagged scenarios                  | Tags applied as pytest marks, rendering unaffected        |
+| Rule blocks                       | Scenarios inside Rules render identically                 |
+| Shared steps (conftest)           | Transparent — steps render normally                       |
+| Wildcard `*` keyword              | Rendered as continuation step                             |
+| Generic `@step` decorator         | Rendered identically to `@given/@when/@then`              |
+
+### Makefile targets for BDD
+
+```makefile
+BDD_TESTS := tests/bdd/
+
+FILE     ?=   # scope to a single file:  make test-bdd FILE=test_checkout
+SCENARIO ?=   # scope to a scenario:     make test-bdd SCENARIO="Guest completes a purchase"
+
+_BDD_PATH  := $(if $(FILE),tests/bdd/$(FILE).py,$(BDD_TESTS))
+_BDD_KFLAG := $(if $(SCENARIO),-k "$(SCENARIO)",)
+
+## test-bdd          Compact BDD output (default).
+test-bdd:
+	@PYTHONPATH=. $(PYTEST) $(FMT) $(_BDD_PATH) $(_BDD_KFLAG) $(ARGS)
+
+## test-bdd-steps    Full step-by-step BDD output.
+test-bdd-steps:
+	@PYTHONPATH=. $(PYTEST) $(FMT) --bdd-steps $(_BDD_PATH) $(_BDD_KFLAG) $(ARGS)
+
+## test-bdd-gherkin  Native pytest-bdd Gherkin terminal reporter (-v).
+test-bdd-gherkin:
+	@PYTHONPATH=. $(PYTEST) --gherkin-terminal-reporter -v $(_BDD_PATH) $(_BDD_KFLAG) $(ARGS)
+```
+
+---
+
 ## Noise suppression
 
 pytest-glaze automatically suppresses lines that add no value in compact
@@ -313,6 +430,7 @@ It works alongside:
 
 - **pytest-cov** — coverage reporting is unaffected
 - **pytest-xdist** — parallel runs are supported
+- **pytest-bdd** — full BDD-aware rendering (see above)
 - **pytest-mock**, **pytest-asyncio**, and any plugin that doesn't replace
   the terminal reporter
 
