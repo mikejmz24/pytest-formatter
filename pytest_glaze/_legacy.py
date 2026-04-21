@@ -29,6 +29,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
+# Replace in _legacy.py — remove the definitions and add:
+from pytest_glaze._types import MAX_E_LINES, TestResult, _BDDStep  # noqa: F401
 
 # Set in pytest_configure when --glaze is active; None otherwise.
 # BDD hook functions below gate on this so they are no-ops without --glaze.
@@ -68,7 +70,7 @@ _STEEL_BLUE = "0;38;2;170;225;255"   # sky blue   — Scenario
 # FIX 8: Hard-coded limit of 6 was too low for large assertion diffs
 #   (e.g. comparing big dicts/lists). Raised and named so it's easy to tune.
 #   Noise filtering in _render_result provides a second layer of trimming.
-MAX_E_LINES: int = 15
+# MAX_E_LINES: int = 15
 
 
 def _esc(code: str, text: str) -> str:
@@ -170,25 +172,25 @@ _SUMMARY_FMT = {
 # ── Domain ────────────────────────────────────────────────────────────────────
 
 
-@dataclass
-class TestResult:
-    """Normalised result for a single test, ready for rendering."""
-
-    nodeid:    str
-    file:      str
-    name:      str
-    outcome:   str                       # one of _OUTCOME_ORDER
-    duration:  float                     # seconds
-    short_msg: Optional[str] = None      # one-liner shown on the E line
-    sections:  List[Tuple[str, str]] = field(default_factory=list)
-
-@dataclass
-class _BDDStep:
-    """Buffered BDD step waiting to be rendered at scenario flush time."""
-    step:      Any
-    outcome:   str
-    duration:  float
-    short_msg: Optional[str]
+# @dataclass
+# class TestResult:
+#     """Normalised result for a single test, ready for rendering."""
+#
+#     nodeid:    str
+#     file:      str
+#     name:      str
+#     outcome:   str                       # one of _OUTCOME_ORDER
+#     duration:  float                     # seconds
+#     short_msg: Optional[str] = None      # one-liner shown on the E line
+#     sections:  List[Tuple[str, str]] = field(default_factory=list)
+#
+# @dataclass
+# class _BDDStep:
+#     """Buffered BDD step waiting to be rendered at scenario flush time."""
+#     step:      Any
+#     outcome:   str
+#     duration:  float
+#     short_msg: Optional[str]
 
 # ── Line coloring ─────────────────────────────────────────────────────────────
 
