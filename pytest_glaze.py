@@ -781,6 +781,8 @@ class FormatterPlugin:
         if "::" in r.name:
             class_name, method_name = r.name.split("::", 1)
             if class_name != self._cur_class:
+                if self._cur_class is not None:
+                    self._p() # <- blank line between class groups
                 self._p(f"  {class_name}")
                 self._cur_class = class_name
             display_name = method_name

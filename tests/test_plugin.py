@@ -255,3 +255,13 @@ class TestClassGrouping:
         printed.clear()
         p._render_result(self._make_result("TestParseAssert::test_b"))
         assert any("TestParseAssert" in l for l in printed)
+
+    def test_blank_line_between_class_groups(self):
+        p = FormatterPlugin()
+        printed = []
+        p._p = lambda t="": printed.append(t)
+        p._open_file_group("tests/test_parsers.py")
+        p._render_result(self._make_result("TestParseAssert::test_a"))
+        printed.clear()
+        p._render_result(self._make_result("TestParseBareAssert::test_b"))
+        assert printed[0] == ""  # blank line before new class header
