@@ -151,86 +151,48 @@ pytest -p no:pytest_glaze tests/
 <details>
 <summary><strong>Passing tests</strong></summary>
 
-```
---- PASS  test_user_login                                  0.8ms
---- PASS  test_token_refresh                               1.2ms
-```
+![pytest-glaze passing tests](docs/images/demo_passing.svg)
+
+Passing tests render as compact single lines — one line per test, grouped by file and class.
+No noise, no clutter. Pure green signal.
 
 </details>
 
 <details>
 <summary><strong>Failing assertions — inline, never deferred</strong></summary>
 
-```
---- FAIL  test_fail_int_equality                           0.4ms
-  E  assert 3 == 30
+![pytest-glaze failing assertions](docs/images/demo_assertions.svg)
 
---- FAIL  test_fail_string                                 0.6ms
-  E  AssertionError: assert 'INTGPT-109' == 'INTGPT-1091'
-  E  - INTGPT-1091
-  E  + INTGPT-109
-
---- FAIL  test_fail_none_check                             0.3ms
-  E  assert None is not None
-
---- FAIL  test_fail_bool                                   0.3ms
-  E  AssertionError: this flag should be True
-  E  assert False
-```
+Assertion failures render immediately below the failing test — no scrolling to a
+separate deferred block. Received values are red, expected values are green,
+prose context stays soft peach.
 
 </details>
 
 <details>
 <summary><strong>Dict and list diffs</strong></summary>
 
-```
---- FAIL  test_fail_dict                                   0.6ms
-  E  AssertionError: assert {'a': 1, 'b': 2, 'c': 3} == {'a': 1, 'b': 999, 'd': 4}
-  E  Differing items:
-  E  {'b': 2} != {'b': 999}
-  E  Left contains 1 more item:
-  E  {'c': 3}
+![pytest-glaze dict and list diffs](docs/images/demo_diffs.svg)
 
---- FAIL  test_fail_list                                   0.5ms
-  E  AssertionError: assert ['Global Launch'] == ['Global Launches']
-  E  At index 0 diff: 'Global Launch' != 'Global Launches'
-```
+Received values render in red, expected values in green. Diff markers (`-` expected, `+` received)
+follow the same color convention. Prose context lines stay soft peach so the values stand out.
 
 </details>
 
 <details>
 <summary><strong>Approximate equality (pytest.approx)</strong></summary>
 
-```
---- FAIL  test_fail_approx_abs                             0.2ms
-  E  assert 3.141592653589793 == 3.14 ± 0.001
-  E  comparison failed
-  E  Obtained: 3.141592653589793
-  E  Expected: 3.14 ± 0.001
+![pytest-glaze approximate equality](docs/images/demo_approx.svg)
 
---- FAIL  test_fail_approx_list                            0.2ms
-  E  assert [0.3000000000...003] == approx([0.4 ± 1.0e-09])
-  E  comparison failed. Mismatched elements: 2 / 2:
-  E  Index | Obtained            | Expected
-  E  0     | 0.30000000000000004 | 0.4 ± 1.0e-09
-  E  1     | 3.3000000000000003  | 3.4 ± 1.0e-09
-```
+`Obtained` renders in red — the wrong value. `Expected` renders in green — the target.
+Table column alignment is preserved so list and dict comparisons stay readable.
 
 </details>
 
 <details>
 <summary><strong>Skips, xfail, and xpass</strong></summary>
 
-```
---- SKIP   test_skip_platform_conditional                  0.2ms
-  E  Skipped: Windows-only feature
-
---- XFAIL  test_xfail_expected_failure                     0.3ms
-  E  xfailed: known bug — assert will fail as expected
-
---- XPASS  test_xpass_unexpected_pass                      0.2ms
-  E  xpassed: this test unexpectedly passes
-```
+![pytest-glaze skips xfail and xpass](docs/images/demo_skips.svg)
 
 XFAIL renders in bright red — an expected failure is still a red signal
 worth tracking. XPASS renders in yellow — an unexpected pass is a surprise
@@ -241,11 +203,7 @@ worth investigating, but not an error.
 <details>
 <summary><strong>Fixture errors</strong></summary>
 
-```
---- PASS   test_error_in_fixture_teardown                  0.2ms
---- ERROR  test_error_in_fixture_teardown                  0.3ms
-  E  RuntimeError: Teardown exploded intentionally
-```
+![pytest-glaze fixture errors](docs/images/demo_fixture.svg)
 
 Setup and teardown errors are classified separately from test failures.
 A passing test body followed by a teardown ERROR both appear — neither is
@@ -256,15 +214,7 @@ silently swallowed.
 <details>
 <summary><strong>Captured output (shown only on failures)</strong></summary>
 
-```
---- FAIL  test_fail_with_stdout_and_stderr                 0.4ms
-  E  AssertionError: intentional failure with stdout and stderr
-  E  assert False
-  ── Captured stdout call ──
-  stdout payload for this failure
-  ── Captured stderr call ──
-  stderr payload for this failure
-```
+![pytest-glaze captured output](docs/images/demo_captured.svg)
 
 Captured output sections are suppressed on passing tests and rendered
 inline on failures — no separate output block to hunt for.
@@ -274,46 +224,19 @@ inline on failures — no separate output block to hunt for.
 <details>
 <summary><strong>Per-file summaries</strong></summary>
 
-```
-tests/test_entities.py
-  --- PASS  test_user_create                               0.3ms
-  --- FAIL  test_user_update                               0.8ms
-    E  assert 'inactive' == 'active'
-  --- PASS  test_user_delete                               0.2ms
-  => 2 passed, 1 failed
-
-tests/test_auth.py
-  --- PASS  test_login                                     0.4ms
-  --- PASS  test_logout                                    0.3ms
-  => 2 passed
-
-Total: 4 passed, 1 failed  in 0.42s
-```
+![pytest-glaze per-file summaries](docs/images/demo_perfile.svg)
 
 </details>
 
 <details>
 <summary><strong>Class-based test grouping</strong></summary>
 
-```
-tests/test_parsers.py
-TestParseAssert
---- PASS  test_simple_int_equality                     0.1ms
---- PASS  test_simple_float_equality                   0.1ms
---- PASS  test_simple_string_equality                  0.1ms
---- FAIL  test_assert_without_operator_returns_none    0.1ms
-E  assert False
-TestParseBareAssert
---- PASS  test_false                                   0.1ms
---- PASS  test_none                                    0.2ms
---- PASS  test_variable_name                           0.1ms
-=> 6 passed, 1 failed
-```
+![pytest-glaze class grouping](docs/images/demo_class_grouping.svg)
 
 Class names render as section headers. Method names render without the class prefix.
 Non-class tests render as before — no header, just the test name.
 
-## </details>
+</details>
 
 ## BDD support (pytest-bdd)
 
@@ -334,7 +257,7 @@ By default pytest-glaze renders BDD scenarios in compact mode — one line
 per scenario. Failures and errors always show full step-by-step output so
 you can see exactly where things went wrong.
 
-![pytest-glaze compact BDD mode](demo_compact.svg)
+![pytest-glaze compact BDD mode](docs/images/demo_compact.svg)
 
 ### Full step-by-step mode (`--bdd-steps`)
 
@@ -344,7 +267,7 @@ Pass `--bdd-steps` to see every step for every scenario:
 pytest --glaze --bdd-steps tests/bdd/
 ```
 
-![pytest-glaze --bdd-steps mode](demo_steps.svg)
+![pytest-glaze --bdd-steps mode](docs/images/demo_steps.svg)
 
 ### Supported scenario types
 
