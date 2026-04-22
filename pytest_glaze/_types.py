@@ -32,3 +32,5 @@ class _BDDStep:
     outcome:   str
     duration:  float
     short_msg: Optional[str]
+
+__all__ = ["MAX_E_LINES", "TestResult", "_BDDStep"]
