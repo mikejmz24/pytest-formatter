@@ -11,7 +11,6 @@ from typing import Optional, Tuple
 from pytest_glaze._colors import (
     c_emsg, c_fail, c_pass, c_skip,
 )
-from pytest_glaze._types import MAX_E_LINES  # noqa: F401
 
 
 class LineColorizer:

@@ -649,7 +649,7 @@ class TestBddCompactMode:
 
     def test_compact_pass_prints_single_line(self):
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         printed = []
         p._p = lambda t="": printed.append(t)
@@ -663,7 +663,7 @@ class TestBddCompactMode:
 
     def test_compact_pass_shows_scenario_name(self):
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         printed = []
         p._p = lambda t="": printed.append(t)
@@ -675,7 +675,7 @@ class TestBddCompactMode:
 
     def test_compact_pass_shows_pass_badge(self):
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         printed = []
         p._p = lambda t="": printed.append(t)
@@ -687,7 +687,7 @@ class TestBddCompactMode:
     def test_compact_fail_shows_steps(self):
         """FAIL scenarios must show full step-by-step even in compact mode."""
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         # Override last step to failed
         last = p._bdd_scenario_buf[p._bdd_last_step_idx]
@@ -702,7 +702,7 @@ class TestBddCompactMode:
     def test_compact_error_shows_steps(self):
         """ERROR scenarios must show full step-by-step even in compact mode."""
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         last = p._bdd_scenario_buf[p._bdd_last_step_idx]
         last.outcome   = "error"
@@ -716,7 +716,7 @@ class TestBddCompactMode:
     def test_steps_mode_shows_all_steps(self):
         """--bdd-steps flag: PASS scenarios show full step-by-step."""
         p = _plugin()
-        p._bdd_steps_mode = True
+        p.bdd_steps_mode = True
         self._make_pass_scenario(p)
         printed = []
         p._p = lambda t="": printed.append(t)
@@ -726,7 +726,7 @@ class TestBddCompactMode:
 
     def test_compact_pass_duration_is_total(self):
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         printed = []
         p._p = lambda t="": printed.append(t)
@@ -737,7 +737,7 @@ class TestBddCompactMode:
     def test_compact_blank_line_after_fail_scenario(self):
         """A blank line must follow a full-step FAIL scenario in compact mode."""
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         last = p._bdd_scenario_buf[p._bdd_last_step_idx]
         last.outcome   = "failed"
@@ -776,7 +776,7 @@ class TestBddCompactSpacing:
     def test_full_step_to_full_step_one_blank_line(self):
         """Two consecutive full-step scenarios must have exactly one blank line between them."""
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
 
         # First scenario flushes — no trailing blank
         printed1 = self._flush_full_step(p, "failed")
@@ -801,14 +801,14 @@ class TestBddCompactSpacing:
     def test_full_step_to_compact_one_blank_line(self):
         """Full-step scenario followed by compact must have exactly one blank line."""
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         printed = self._flush_full_step(p, "failed")
         assert printed[-1] != ""
 
     def test_compact_to_compact_no_blank_line(self):
         """Two consecutive compact scenarios must have no blank line between them."""
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         printed = []
         p._p = lambda t="": printed.append(t)
@@ -817,7 +817,7 @@ class TestBddCompactSpacing:
 
     def test_compact_to_compact_no_blank_line(self):
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         p._bdd_last_was_full_step = False  # previous was compact
         self._make_pass_scenario(p)
         p._bdd_scenario_buf.insert(0, "")
@@ -829,7 +829,7 @@ class TestBddCompactSpacing:
 
     def test_full_step_to_compact_blank_line_printed(self):
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         p._bdd_last_was_full_step = True  # previous was full-step
         self._make_pass_scenario(p)
         p._bdd_scenario_buf.insert(0, "")
@@ -842,7 +842,7 @@ class TestBddCompactSpacing:
     def ttest_full_step_to_compact_blank_line_printedest_full_step_to_compact_blank_line_printed(self):
         """Blank line buffered by _bdd_before_scenario must print in compact mode."""
         p = _plugin()
-        p._bdd_steps_mode = False
+        p.bdd_steps_mode = False
         self._make_pass_scenario(p)
         p._bdd_scenario_buf.insert(0, "")  # simulate _bdd_before_scenario spacing
         p._bdd_last_step_idx += 1

@@ -49,7 +49,7 @@ class FormatterPlugin:
         self._bdd_cur_feature:        Optional[str]     = None
         self._bdd_any_feature_printed: bool             = False
         self._bdd_pending_file:       Optional[str]     = None
-        self._bdd_steps_mode:         bool              = False
+        self.bdd_steps_mode:         bool              = False
         self._bdd_last_was_full_step: bool              = False
 
     # ── I/O ───────────────────────────────────────────────────────────────────
@@ -268,7 +268,7 @@ class FormatterPlugin:
                 last.outcome   = outcome
                 last.short_msg = short_msg
 
-        needs_steps = outcome in ("failed", "error") or self._bdd_steps_mode
+        needs_steps = outcome in ("failed", "error") or self.bdd_steps_mode
         if not needs_steps:
             total_dur = sum(
                 item.duration for item in self._bdd_scenario_buf
@@ -304,8 +304,8 @@ class FormatterPlugin:
 
     # ── BDD delegate methods (called by module-level hooks) ───────────────────
 
-    def _bdd_before_scenario(self, request, feature, scenario) -> None:
-        file, _ = self.split_nodeid(request.node.nodeid)
+    def _bdd_before_scenario(self, _request, feature, scenario) -> None:
+        file, _ = self.split_nodeid(_request.node.nodeid)
         self._bdd_pending_file = file
         feature_name = getattr(feature, "name", "")
         self._bdd_scenario_buf = []
@@ -322,15 +322,15 @@ class FormatterPlugin:
         self._bdd_scenario_buf.append(c_bdd_scenario(f"    Scenario: {scenario.name}"))
         self._bdd_last_step_idx = -1
 
-    def _bdd_before_step(self, request, feature, scenario, step, step_func) -> None:
-        bg       = getattr(feature, "background", None)
+    def _bdd_before_step(self, _request, _feature, _scenario, step, _step_func) -> None:
+        bg       = getattr(_feature, "background", None)
         bg_steps = list(bg.steps) if bg and hasattr(bg, "steps") else []
         if bg_steps and step is bg_steps[0]:
             self._bdd_scenario_buf.append(f"       {c_dim('Background:')}")
         self._bdd_step_t0[id(step)] = time.monotonic()
 
     def _bdd_after_step(
-        self, request, feature, scenario, step, step_func, step_func_args
+        self, request, _feature, _scenario, step, _step_func, _step_func_args
     ) -> None:
         t0       = self._bdd_step_t0.pop(id(step), time.monotonic())
         duration = time.monotonic() - t0
@@ -340,7 +340,7 @@ class FormatterPlugin:
         self._bdd_handled.add(request.node.nodeid)
 
     def _bdd_step_error(
-        self, request, feature, scenario, step, step_func, step_func_args, exception
+        self, request, _feature, _scenario, step, _step_func, _step_func_args, exception
     ) -> None:
         t0        = self._bdd_step_t0.pop(id(step), time.monotonic())
         duration  = time.monotonic() - t0
@@ -352,7 +352,7 @@ class FormatterPlugin:
         self._bdd_handled.add(request.node.nodeid)
 
     def _bdd_step_func_lookup_error(
-        self, request, feature, scenario, step, exception
+        self, request, _feature, _scenario, step, exception
     ) -> None:
         t0        = self._bdd_step_t0.pop(id(step), time.monotonic())
         duration  = time.monotonic() - t0
