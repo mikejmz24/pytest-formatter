@@ -121,7 +121,7 @@ def pytest_configure(config: pytest.Config) -> None:
     existing = config.pluginmanager.get_plugin(_plugin_key)
     if existing is None:
         plugin = FormatterPlugin()
-        plugin.bdd_steps_mode = config.getoption("--bdd-steps", default=False)
+        plugin.bdd.steps_mode = config.getoption("--bdd-steps", default=False)
         config.pluginmanager.register(plugin, _plugin_key)
     else:
         plugin = existing

@@ -173,54 +173,54 @@ def test_teardown_error(): ...
 @given(parsers.re(r"a passing BDD scenario with (?P<n>\d+) steps?$"), target_fixture="bdd_steps")
 def passing_scenario_n_steps(plugin, n):
     n = int(n)
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Guest completes a purchase")]
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Guest completes a purchase")]
     for i in range(n):
-        plugin._bdd_scenario_buf.append(
+        plugin.bdd.scenario_buf.append(
             _make_bdd_step("Given", f"step {i}", "passed", 0.1)
         )
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given(parsers.parse("a passing BDD scenario with {n:d} steps each taking {dur:f} seconds"),
        target_fixture="bdd_steps")
 def passing_scenario_n_steps_duration(plugin, n, dur):
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Guest completes a purchase")]
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Guest completes a purchase")]
     for i in range(n):
-        plugin._bdd_scenario_buf.append(
+        plugin.bdd.scenario_buf.append(
             _make_bdd_step("Given", f"step {i}", "passed", dur)
         )
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given("a BDD scenario where the last step fails", target_fixture="bdd_steps")
 def scenario_last_step_fails(plugin):
     plugin._test_outcome = "failed"
     plugin._test_short_msg = "assert 95.0 == 90"
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Discount code")]
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Then", "step 2", "failed", 0.1,
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Discount code")]
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Then", "step 2", "failed", 0.1,
                                                     short_msg="assert 95.0 == 90"))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given("a BDD scenario where a step raises a RuntimeError", target_fixture="bdd_steps")
 def scenario_step_runtime_error(plugin):
     plugin._test_outcome = "error"
     plugin._test_short_msg = "RuntimeError: service timed out"
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Inventory error")]
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_scenario_buf.append(_make_bdd_step("When", "step 2", "error", 0.1,
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Inventory error")]
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.scenario_buf.append(_make_bdd_step("When", "step 2", "error", 0.1,
                                                     short_msg="RuntimeError: service timed out"))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given("a skipped BDD scenario", target_fixture="skip_result")
 def skipped_bdd_scenario(plugin):
-    plugin._bdd_scenario_names["tests/bdd/test_checkout.py::test_skip"] = "Feature not yet implemented"
+    plugin.bdd.scenario_names["tests/bdd/test_checkout.py::test_skip"] = "Feature not yet implemented"
     return _make_result("test_skip", "skipped", "Skipped: feature flag not enabled in CI",
                         file="tests/bdd/test_checkout.py")
 
@@ -229,63 +229,63 @@ def skipped_bdd_scenario(plugin):
 def scenario_last_step_xfailed(plugin):
     plugin._test_outcome = "xfailed"
     plugin._test_short_msg = "xfailed: known bug"
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Known bug")]
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Then", "step 2", "failed", 0.1,
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Known bug")]
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Then", "step 2", "failed", 0.1,
                                                     short_msg="assert x"))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given("a BDD scenario where the last step is xpassed", target_fixture="bdd_steps")
 def scenario_last_step_xpassed(plugin):
     plugin._test_outcome = "xpassed"
     plugin._test_short_msg = "xpassed: bug fixed"
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Fixed bug")]
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Then", "step 2", "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Fixed bug")]
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Then", "step 2", "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given(parsers.parse('a passing BDD scenario with a "{keyword}" step named "{name}"'),
        target_fixture="bdd_steps")
 def passing_scenario_named_step(plugin, keyword, name):
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Named step")]
-    plugin._bdd_scenario_buf.append(_make_bdd_step(keyword, name, "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Named step")]
+    plugin.bdd.scenario_buf.append(_make_bdd_step(keyword, name, "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given(parsers.parse('a BDD scenario in feature "{feature_name}"'), target_fixture="bdd_scenario")
 def scenario_in_feature(plugin, feature_name):
     from pytest_glaze._colors import c_bdd_feature, c_bdd_scenario
-    plugin._bdd_scenario_buf = [
+    plugin.bdd.scenario_buf = [
         c_bdd_feature(f"  Feature: {feature_name}"),
         c_bdd_scenario("    Scenario: Guest completes a purchase"),
     ]
-    plugin._bdd_cur_feature = feature_name
-    plugin._bdd_any_feature_printed = True
-    plugin._bdd_last_step_idx = -1
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.cur_feature = feature_name
+    plugin.bdd.any_feature_printed = True
+    plugin.bdd.last_step_idx = -1
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given("two BDD scenarios in the same feature \"Shopping cart checkout\"",
        target_fixture="bdd_scenario")
 def two_scenarios_same_feature(plugin):
     from pytest_glaze._colors import c_bdd_feature, c_bdd_scenario
-    plugin._bdd_scenario_buf = [
+    plugin.bdd.scenario_buf = [
         c_bdd_feature("  Feature: Shopping cart checkout"),
         c_bdd_scenario("    Scenario: Scenario A"),
     ]
-    plugin._bdd_cur_feature = "Shopping cart checkout"
-    plugin._bdd_any_feature_printed = True
-    plugin._bdd_last_step_idx = -1
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.cur_feature = "Shopping cart checkout"
+    plugin.bdd.any_feature_printed = True
+    plugin.bdd.last_step_idx = -1
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given("another BDD scenario in feature \"User authentication\"",
@@ -300,34 +300,34 @@ def scenario_missing_step(plugin):
     # Trim through the same logic as the formatter
     if "StepDefinitionNotFoundError" in raw_msg and ". " in raw_msg:
         raw_msg = raw_msg[:raw_msg.index(". ") + 1]
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Missing step")]
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step defined", "passed", 0.1))
-    plugin._bdd_scenario_buf.append(_make_bdd_step(
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Missing step")]
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step defined", "passed", 0.1))
+    plugin.bdd.scenario_buf.append(_make_bdd_step(
         "When", "a step that has no implementation", "error", 0.1,
         short_msg=raw_msg
     ))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given("a BDD scenario with a background step", target_fixture="bdd_steps")
 def scenario_with_background(plugin):
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Auth")]
-    plugin._bdd_scenario_buf.append(f"       \033[{2}mBackground:\033[0m")
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "the database is available", "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    return plugin._bdd_scenario_buf
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Auth")]
+    plugin.bdd.scenario_buf.append(f"       \033[{2}mBackground:\033[0m")
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "the database is available", "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    return plugin.bdd.scenario_buf
 
 
 @given(parsers.parse("a passing BDD scenario with {n:d} steps for teardown"),
        target_fixture="teardown_bdd_steps")
 def passing_scenario_for_teardown(plugin, n):
-    plugin._bdd_scenario_buf = [c_bdd_scenario("    Scenario: Teardown test")]
+    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Teardown test")]
     for i in range(n):
-        plugin._bdd_scenario_buf.append(_make_bdd_step("Given", f"step {i}", "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    plugin._bdd_handled.add("tests/bdd/test_checkout.py::test_teardown")
-    return plugin._bdd_scenario_buf
+        plugin.bdd.scenario_buf.append(_make_bdd_step("Given", f"step {i}", "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    plugin.bdd.handled.add("tests/bdd/test_checkout.py::test_teardown")
+    return plugin.bdd.scenario_buf
 
 
 @given(parsers.parse('a teardown error "{error}"'), target_fixture="teardown_error")
@@ -339,13 +339,13 @@ def teardown_error_msg(error):
 
 @when("pytest-glaze flushes the scenario in compact mode", target_fixture="printed")
 def flush_compact(plugin):
-    plugin.bdd_steps_mode = False
+    plugin.bdd.steps_mode = False
     _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
     return _get_lines(plugin)
 
 @when("pytest-glaze flushes the scenario in steps mode", target_fixture="printed")
 def flush_steps(plugin):
-    plugin.bdd_steps_mode = True
+    plugin.bdd.steps_mode = True
     _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
     return _get_lines(plugin)
 
@@ -366,7 +366,7 @@ def process_scenario(plugin, bdd_scenario):
 
 @when("pytest-glaze processes the scenario in steps mode", target_fixture="printed")
 def process_scenario_steps_mode(plugin, bdd_scenario):
-    plugin.bdd_steps_mode = True
+    plugin.bdd.steps_mode = True
     _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
     return _get_lines(plugin)
 
@@ -375,12 +375,12 @@ def process_same_feature_twice(plugin, bdd_scenario):
     from pytest_glaze._colors import c_bdd_scenario
     _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
     # Second scenario — same feature, no new feature header
-    plugin._bdd_scenario_buf = [
+    plugin.bdd.scenario_buf = [
         c_bdd_scenario("    Scenario: Scenario B"),
     ]
-    plugin._bdd_last_step_idx = -1
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
+    plugin.bdd.last_step_idx = -1
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     _flush(plugin, "passed")
     return _get_lines(plugin)
 
@@ -391,22 +391,22 @@ def process_both_scenarios(plugin, bdd_scenario, second_scenario):
 
     from pytest_glaze._colors import c_bdd_feature, c_bdd_scenario
     # Simulate new feature — add blank line before new feature header
-    plugin._bdd_scenario_buf = [
+    plugin.bdd.scenario_buf = [
         "",  # blank line before new feature
         c_bdd_feature(f"  Feature: {second_scenario}"),
         c_bdd_scenario("    Scenario: Login"),
     ]
-    plugin._bdd_last_step_idx = -1
-    plugin._bdd_scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin._bdd_last_step_idx = len(plugin._bdd_scenario_buf) - 1
-    plugin._bdd_last_was_full_step = True
+    plugin.bdd.last_step_idx = -1
+    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
+    plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
+    plugin.bdd.last_was_full_step = True
     _flush(plugin, "passed")
     return _get_lines(plugin)
 
 
 @when("pytest-glaze renders the teardown error", target_fixture="printed")
 def render_teardown(plugin, teardown_bdd_steps, teardown_error):
-    plugin.bdd_steps_mode = True
+    plugin.bdd.steps_mode = True
     _flush(plugin, "passed")
     teardown = _make_result(
     name="test_teardown",

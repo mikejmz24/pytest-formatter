@@ -17,7 +17,7 @@ from pytest_glaze._colors import (
     c_error, c_section,
 )
 from pytest_glaze._colorizer import LineColorizer
-from pytest_glaze._types import MAX_E_LINES, TestResult, _BDDStep
+from pytest_glaze._types import MAX_E_LINES, TestResult, _BDDStep, _BDDState
 
 
 class FormatterPlugin:
@@ -38,19 +38,7 @@ class FormatterPlugin:
         self._file_buf:   List[TestResult]       = []
         self._col_errors: List[Tuple[str, str]]  = []
         self._cur_class:  Optional[str]          = None
-
-        # BDD state
-        self._bdd_step_t0:            Dict[int, float] = {}
-        self._bdd_handled:            set               = set()
-        self._bdd_first_in_file:      bool              = True
-        self._bdd_scenario_buf:       List              = []
-        self._bdd_last_step_idx:      int               = -1
-        self._bdd_scenario_names:     Dict[str, str]    = {}
-        self._bdd_cur_feature:        Optional[str]     = None
-        self._bdd_any_feature_printed: bool             = False
-        self._bdd_pending_file:       Optional[str]     = None
-        self.bdd_steps_mode:         bool              = False
-        self._bdd_last_was_full_step: bool              = False
+        self.bdd = _BDDState()
 
     # ── I/O ───────────────────────────────────────────────────────────────────
 
@@ -147,7 +135,7 @@ class FormatterPlugin:
 
     def _render_result(self, r: TestResult) -> None:
         """Print one test result line, inline E lines, and captured sections."""
-        if r.nodeid in self._bdd_handled:
+        if r.nodeid in self.bdd.handled:
             if r.outcome == "error":
                 self._p(
                     f"    {c_error('---')} {_BADGE['error']}  "
@@ -162,31 +150,31 @@ class FormatterPlugin:
                         colored = LineColorizer.color_e_line(line, "error", is_first=i == 0)
                         self._p(f"      {c_emsg('E')}  {colored}")
                 return
-            if self._bdd_pending_file:
-                self._open_file_group(self._bdd_pending_file)
-                self._bdd_pending_file = None
+            if self.bdd.pending_file:
+                self._open_file_group(self.bdd.pending_file)
+                self.bdd.pending_file = None
             self._bdd_flush_scenario(r.outcome, r.short_msg)
             return
 
-        if r.outcome == "skipped" and r.nodeid in self._bdd_scenario_names:
+        if r.outcome == "skipped" and r.nodeid in self.bdd.scenario_names:
             self._open_file_group(r.file)
-            feature_name = self._bdd_scenario_names.get(r.nodeid + "__feature__", "")
-            if feature_name and feature_name != self._bdd_cur_feature:
-                if self._bdd_any_feature_printed:
+            feature_name = self.bdd.scenario_names.get(r.nodeid + "__feature__", "")
+            if feature_name and feature_name != self.bdd.cur_feature:
+                if self.bdd.any_feature_printed:
                     self._p()
                 self._p(c_bdd_feature(f"  Feature: {feature_name}"))
-                self._bdd_cur_feature          = feature_name
-                self._bdd_any_feature_printed  = True
-            if self._bdd_last_was_full_step:
+                self.bdd.cur_feature          = feature_name
+                self.bdd.any_feature_printed  = True
+            if self.bdd.last_was_full_step:
                 self._p()
             color_fn      = _OUTCOME_COLOR["skipped"]
             badge         = _BADGE["skipped"]
-            scenario_name = self._bdd_scenario_names[r.nodeid]
+            scenario_name = self.bdd.scenario_names[r.nodeid]
             self._p(f"    {color_fn('---')} {badge}  {color_fn(f'Scenario: {scenario_name}')}")
             if r.short_msg:
                 colored = LineColorizer.color_e_line(r.short_msg, "skipped", is_first=True)
                 self._p(f"      {c_emsg('E')}  {colored}")
-            self._bdd_last_was_full_step = False
+            self.bdd.last_was_full_step = False
             return
 
         # ── Normal (non-BDD) rendering ────────────────────────────────────────
@@ -262,29 +250,29 @@ class FormatterPlugin:
         Flush the buffered scenario lines, applying xfail/xpass correction
         to the last step before printing.
         """
-        if outcome in ("xfailed", "xpassed") and self._bdd_last_step_idx >= 0:
-            last = self._bdd_scenario_buf[self._bdd_last_step_idx]
+        if outcome in ("xfailed", "xpassed") and self.bdd.last_step_idx >= 0:
+            last = self.bdd.scenario_buf[self.bdd.last_step_idx]
             if isinstance(last, _BDDStep):
                 last.outcome   = outcome
                 last.short_msg = short_msg
 
-        needs_steps = outcome in ("failed", "error") or self.bdd_steps_mode
+        needs_steps = outcome in ("failed", "error") or self.bdd.steps_mode
         if not needs_steps:
             total_dur = sum(
-                item.duration for item in self._bdd_scenario_buf
+                item.duration for item in self.bdd.scenario_buf
                 if isinstance(item, _BDDStep)
             )
             scenario_line = next(
-                (item for item in reversed(self._bdd_scenario_buf)
+                (item for item in reversed(self.bdd.scenario_buf)
                  if isinstance(item, str) and "Scenario:" in item),
                 None,
             )
-            for item in self._bdd_scenario_buf:
+            for item in self.bdd.scenario_buf:
                 if isinstance(item, str) and "Scenario:" not in item:
-                    if item == "" and not self._bdd_last_was_full_step:
+                    if item == "" and not self.bdd.last_was_full_step:
                         continue
                     self._p(item)
-            self._bdd_last_was_full_step = False
+            self.bdd.last_was_full_step = False
             if scenario_line is not None:
                 badge    = _BADGE.get(outcome, outcome.upper())
                 color_fn = _OUTCOME_COLOR.get(outcome, c_dim)
@@ -292,75 +280,75 @@ class FormatterPlugin:
                 plain    = re.sub(r"\033\[[\d;]*m", "", scenario_line).strip()
                 self._p(f"    {color_fn('---')} {badge}  {color_fn(plain)}{dur}")
         else:
-            for item in self._bdd_scenario_buf:
+            for item in self.bdd.scenario_buf:
                 if isinstance(item, str):
                     self._p(item)
                 else:
                     self._render_bdd_step_line(item)
-            self._bdd_last_was_full_step = True
+            self.bdd.last_was_full_step = True
 
-        self._bdd_scenario_buf  = []
-        self._bdd_last_step_idx = -1
+        self.bdd.scenario_buf  = []
+        self.bdd.last_step_idx = -1
 
     # ── BDD delegate methods (called by module-level hooks) ───────────────────
 
     def _bdd_before_scenario(self, _request, feature, scenario) -> None:
         file, _ = self.split_nodeid(_request.node.nodeid)
-        self._bdd_pending_file = file
+        self.bdd.pending_file = file
         feature_name = getattr(feature, "name", "")
-        self._bdd_scenario_buf = []
-        if feature_name and feature_name != self._bdd_cur_feature:
-            if self._bdd_any_feature_printed:
-                self._bdd_scenario_buf.append("")
-            self._bdd_scenario_buf.append(c_bdd_feature(f"  Feature: {feature_name}"))
-            self._bdd_cur_feature          = feature_name
-            self._bdd_any_feature_printed  = True
-            self._bdd_first_in_file        = False
-        elif not self._bdd_first_in_file:
-            self._bdd_scenario_buf.append("")
-        self._bdd_first_in_file = False
-        self._bdd_scenario_buf.append(c_bdd_scenario(f"    Scenario: {scenario.name}"))
-        self._bdd_last_step_idx = -1
+        self.bdd.scenario_buf = []
+        if feature_name and feature_name != self.bdd.cur_feature:
+            if self.bdd.any_feature_printed:
+                self.bdd.scenario_buf.append("")
+            self.bdd.scenario_buf.append(c_bdd_feature(f"  Feature: {feature_name}"))
+            self.bdd.cur_feature          = feature_name
+            self.bdd.any_feature_printed  = True
+            self.bdd.first_in_file        = False
+        elif not self.bdd.first_in_file:
+            self.bdd.scenario_buf.append("")
+        self.bdd.first_in_file = False
+        self.bdd.scenario_buf.append(c_bdd_scenario(f"    Scenario: {scenario.name}"))
+        self.bdd.last_step_idx = -1
 
     def _bdd_before_step(self, _request, _feature, _scenario, step, _step_func) -> None:
         bg       = getattr(_feature, "background", None)
         bg_steps = list(bg.steps) if bg and hasattr(bg, "steps") else []
         if bg_steps and step is bg_steps[0]:
-            self._bdd_scenario_buf.append(f"       {c_dim('Background:')}")
-        self._bdd_step_t0[id(step)] = time.monotonic()
+            self.bdd.scenario_buf.append(f"       {c_dim('Background:')}")
+        self.bdd.step_t0[id(step)] = time.monotonic()
 
     def _bdd_after_step(
         self, request, _feature, _scenario, step, _step_func, _step_func_args
     ) -> None:
-        t0       = self._bdd_step_t0.pop(id(step), time.monotonic())
+        t0       = self.bdd.step_t0.pop(id(step), time.monotonic())
         duration = time.monotonic() - t0
         bdd_step = _BDDStep(step=step, outcome="passed", duration=duration, short_msg=None)
-        self._bdd_scenario_buf.append(bdd_step)
-        self._bdd_last_step_idx = len(self._bdd_scenario_buf) - 1
-        self._bdd_handled.add(request.node.nodeid)
+        self.bdd.scenario_buf.append(bdd_step)
+        self.bdd.last_step_idx = len(self.bdd.scenario_buf) - 1
+        self.bdd.handled.add(request.node.nodeid)
 
     def _bdd_step_error(
         self, request, _feature, _scenario, step, _step_func, _step_func_args, exception
     ) -> None:
-        t0        = self._bdd_step_t0.pop(id(step), time.monotonic())
+        t0        = self.bdd.step_t0.pop(id(step), time.monotonic())
         duration  = time.monotonic() - t0
         outcome   = "failed" if isinstance(exception, AssertionError) else "error"
         short_msg = self._extract_exception_msg(exception)
         bdd_step  = _BDDStep(step=step, outcome=outcome, duration=duration, short_msg=short_msg)
-        self._bdd_scenario_buf.append(bdd_step)
-        self._bdd_last_step_idx = len(self._bdd_scenario_buf) - 1
-        self._bdd_handled.add(request.node.nodeid)
+        self.bdd.scenario_buf.append(bdd_step)
+        self.bdd.last_step_idx = len(self.bdd.scenario_buf) - 1
+        self.bdd.handled.add(request.node.nodeid)
 
     def _bdd_step_func_lookup_error(
         self, request, _feature, _scenario, step, exception
     ) -> None:
-        t0        = self._bdd_step_t0.pop(id(step), time.monotonic())
+        t0        = self.bdd.step_t0.pop(id(step), time.monotonic())
         duration  = time.monotonic() - t0
         short_msg = self._extract_exception_msg(exception)
         bdd_step  = _BDDStep(step=step, outcome="error", duration=duration, short_msg=short_msg)
-        self._bdd_scenario_buf.append(bdd_step)
-        self._bdd_last_step_idx = len(self._bdd_scenario_buf) - 1
-        self._bdd_handled.add(request.node.nodeid)
+        self.bdd.scenario_buf.append(bdd_step)
+        self.bdd.last_step_idx = len(self.bdd.scenario_buf) - 1
+        self.bdd.handled.add(request.node.nodeid)
 
     # ── pytest hooks ──────────────────────────────────────────────────────────
 
@@ -383,18 +371,18 @@ class FormatterPlugin:
                 continue
             scenario_obj = getattr(fn, "__scenario__", None)
             if scenario_obj is not None:
-                self._bdd_scenario_names[item.nodeid] = (
+                self.bdd.scenario_names[item.nodeid] = (
                     getattr(scenario_obj, "name", None) or str(scenario_obj)
                 )
                 feature = getattr(scenario_obj, "feature", None)
                 if feature:
-                    self._bdd_scenario_names[item.nodeid + "__feature__"] = (
+                    self.bdd.scenario_names[item.nodeid + "__feature__"] = (
                         getattr(feature, "name", "")
                     )
             elif fn.__doc__:
                 parts = fn.__doc__.split(": ", 1)
                 if len(parts) == 2:
-                    self._bdd_scenario_names[item.nodeid] = parts[1]
+                    self.bdd.scenario_names[item.nodeid] = parts[1]
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_collectreport(self, report) -> None:
