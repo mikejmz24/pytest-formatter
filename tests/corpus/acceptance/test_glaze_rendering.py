@@ -24,24 +24,11 @@ def plugin() -> FormatterPlugin:
 
 
 def _render_one(plugin: FormatterPlugin, result: TestResult) -> List[str]:
-    lines: List[str] = []
-    plugin._p = lambda t="": lines.append(t)
-    plugin._open_file_group(result.file)
-    plugin._file_buf.append(result)
-    plugin._results.append(result)
-    plugin._render_result(result)
-    return lines
+    return plugin.render_result(result)
 
 
 def _render_many(plugin: FormatterPlugin, results: list) -> List[str]:
-    lines: List[str] = []
-    plugin._p = lambda t="": lines.append(t)
-    for r in results:
-        plugin._open_file_group(r.file)
-        plugin._file_buf.append(r)
-        plugin._results.append(r)
-        plugin._render_result(r)
-    return lines
+    return plugin.render_results(results)
 
 
 # ── Scenarios ─────────────────────────────────────────────────────────────────
@@ -250,28 +237,16 @@ def render_all_results(plugin, results):
 
 @when("pytest-glaze closes the file group", target_fixture="printed")
 def close_file_group(plugin, results):
-    lines: List[str] = []
-    plugin._p = lambda t="": lines.append(t)
-    for r in results:
-        plugin._open_file_group(r.file)
-        plugin._file_buf.append(r)
-        plugin._results.append(r)
-        plugin._render_result(r)
-    plugin._flush_file_summary()
+    lines = plugin.render_results(results)
+    lines += plugin.flush_file_summary()
     return lines
+
 
 @when("pytest-glaze renders both results", target_fixture="printed")
 def render_both(plugin, result, teardown_error):
-    lines: List[str] = []
-    plugin._p = lambda t="": lines.append(t)
-    plugin._open_file_group(result.file)
-    plugin._file_buf.append(result)
-    plugin._results.append(result)
-    plugin._render_result(result)
     teardown = _make_result(name=result.name, outcome="error",
                             short_msg=teardown_error, file=result.file)
-    plugin._render_result(teardown)
-    return lines
+    return plugin.render_results([result, teardown])
 
 
 # ── Then ──────────────────────────────────────────────────────────────────────

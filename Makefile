@@ -1,4 +1,3 @@
-# ── Settings ─────────────────────────────────────────────────────────────────
 
 PYTHON   := python
 PYTEST   := uv run python -m pytest

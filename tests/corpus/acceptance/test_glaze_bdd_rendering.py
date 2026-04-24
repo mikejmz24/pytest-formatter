@@ -7,13 +7,10 @@ Steps call FormatterPlugin directly and assert on printed output.
 """
 from __future__ import annotations
 
-from typing import List
-
 import pytest
 from pytest_bdd import given, parsers, scenario, then, when
 
 from pytest_glaze import FormatterPlugin
-from pytest_glaze._types import TestResult
 
 # ── ANSI color codes ──────────────────────────────────────────────────────────
 from tests.helpers import (
@@ -29,10 +26,9 @@ from pytest_glaze._colors import c_bdd_scenario
 @pytest.fixture
 def plugin() -> FormatterPlugin:
     p = FormatterPlugin()
-    p._open_file_group("tests/bdd/test_checkout.py")
-    lines: List[str] = []
-    p._p = lambda t="": lines.append(t)
-    p._lines = lines
+    # Open initial file group — output discarded
+    with p.capture():
+        p.open_file("tests/bdd/test_checkout.py")
     p._test_outcome = "passed"
     p._test_short_msg = None
     return p
@@ -41,12 +37,12 @@ def plugin() -> FormatterPlugin:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _flush(plugin, outcome, short_msg=None):
-    plugin._bdd_flush_scenario(outcome, short_msg)
-    return plugin._lines
+    return plugin.flush_scenario(outcome, short_msg)
 
 
 def _get_lines(plugin):
-    return plugin._lines
+    # No longer needed — flush_scenario returns lines directly
+    return []
 
 
 # ── Scenario declarations ─────────────────────────────────────────────────────
@@ -340,59 +336,51 @@ def teardown_error_msg(error):
 @when("pytest-glaze flushes the scenario in compact mode", target_fixture="printed")
 def flush_compact(plugin):
     plugin.bdd.steps_mode = False
-    _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
-    return _get_lines(plugin)
+    return plugin.flush_scenario(plugin._test_outcome, plugin._test_short_msg)
+
 
 @when("pytest-glaze flushes the scenario in steps mode", target_fixture="printed")
 def flush_steps(plugin):
     plugin.bdd.steps_mode = True
-    _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
-    return _get_lines(plugin)
+    return plugin.flush_scenario(plugin._test_outcome, plugin._test_short_msg)
 
 
 @when("pytest-glaze renders the skip result", target_fixture="printed")
 def render_skip(plugin, skip_result):
-    plugin._open_file_group(skip_result.file)
-    plugin._file_buf.append(skip_result)
-    plugin._render_result(skip_result)
-    return _get_lines(plugin)
+    return plugin.render_result(skip_result)
 
 
 @when("pytest-glaze processes the scenario", target_fixture="printed")
 def process_scenario(plugin, bdd_scenario):
-    _flush(plugin, "passed")
-    return _get_lines(plugin)
+    return plugin.flush_scenario("passed")
 
 
 @when("pytest-glaze processes the scenario in steps mode", target_fixture="printed")
 def process_scenario_steps_mode(plugin, bdd_scenario):
     plugin.bdd.steps_mode = True
-    _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
-    return _get_lines(plugin)
+    return plugin.flush_scenario(plugin._test_outcome, plugin._test_short_msg)
+
 
 @when("pytest-glaze processes the same feature twice", target_fixture="printed")
 def process_same_feature_twice(plugin, bdd_scenario):
     from pytest_glaze._colors import c_bdd_scenario
-    _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
-    # Second scenario — same feature, no new feature header
+    lines = plugin.flush_scenario(plugin._test_outcome, plugin._test_short_msg)
     plugin.bdd.scenario_buf = [
         c_bdd_scenario("    Scenario: Scenario B"),
     ]
     plugin.bdd.last_step_idx = -1
     plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
-    _flush(plugin, "passed")
-    return _get_lines(plugin)
+    lines += plugin.flush_scenario("passed")
+    return lines
 
 
 @when("pytest-glaze processes both scenarios", target_fixture="printed")
 def process_both_scenarios(plugin, bdd_scenario, second_scenario):
-    _flush(plugin, plugin._test_outcome, plugin._test_short_msg)
-
     from pytest_glaze._colors import c_bdd_feature, c_bdd_scenario
-    # Simulate new feature — add blank line before new feature header
+    lines = plugin.flush_scenario(plugin._test_outcome, plugin._test_short_msg)
     plugin.bdd.scenario_buf = [
-        "",  # blank line before new feature
+        "",
         c_bdd_feature(f"  Feature: {second_scenario}"),
         c_bdd_scenario("    Scenario: Login"),
     ]
@@ -400,22 +388,22 @@ def process_both_scenarios(plugin, bdd_scenario, second_scenario):
     plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     plugin.bdd.last_was_full_step = True
-    _flush(plugin, "passed")
-    return _get_lines(plugin)
+    lines += plugin.flush_scenario("passed")
+    return lines
 
 
 @when("pytest-glaze renders the teardown error", target_fixture="printed")
 def render_teardown(plugin, teardown_bdd_steps, teardown_error):
     plugin.bdd.steps_mode = True
-    _flush(plugin, "passed")
+    lines = plugin.flush_scenario("passed")
     teardown = _make_result(
-    name="test_teardown",
-    outcome="error",
-    short_msg=teardown_error,
-    file="tests/bdd/test_checkout.py",
+        name="test_teardown",
+        outcome="error",
+        short_msg=teardown_error,
+        file="tests/bdd/test_checkout.py",
     )
-    plugin._render_result(teardown)
-    return _get_lines(plugin)
+    lines += plugin.render_result(teardown)
+    return lines
 
 
 # ── Then steps ────────────────────────────────────────────────────────────────

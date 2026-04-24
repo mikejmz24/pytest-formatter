@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Generator
+from contextlib import contextmanager
 
 import pytest
 
@@ -17,10 +18,105 @@ from pytest_glaze._colors import (
     c_error, c_section,
 )
 from pytest_glaze._colorizer import LineColorizer
-from pytest_glaze._types import MAX_E_LINES, TestResult, _BDDStep, _BDDState
+from pytest_glaze._types import MAX_E_LINES, TestResult, _BDDStep, _BDDState, _SessionState
 
+class _FormatterTestingMixin:
+    """
+    Testing interface for FormatterPlugin.
 
-class FormatterPlugin:
+    Provides public methods for unit testing without accessing protected members.
+    Do not call these methods in production code.
+    """
+
+    @contextmanager
+    def capture(self) -> "Generator[List[str], None, None]":
+        """Capture printed output as a list of strings. For testing only."""
+        lines: List[str] = []
+        self.session.output_buf = lines  # type: ignore[attr-defined]
+        try:
+            yield lines
+        finally:
+            self.session.output_buf = None  # type: ignore[attr-defined]
+
+    def render_result(self, result: "TestResult") -> "List[str]":
+        """Render a result and return printed lines. For testing only."""
+        with self.capture() as lines:
+            self._open_file_group(result.file)  # type: ignore[attr-defined]
+            self._file_buf.append(result)       # type: ignore[attr-defined]
+            self.session.results.append(result)  # type: ignore[attr-defined]
+            self._render_result(result)          # type: ignore[attr-defined]
+        return lines
+
+    def render_results(self, results: "List[TestResult]") -> "List[str]":
+        """Render multiple results and return printed lines. For testing only."""
+        with self.capture() as lines:
+            for r in results:
+                self._open_file_group(r.file)   # type: ignore[attr-defined]
+                self._file_buf.append(r)         # type: ignore[attr-defined]
+                self.session.results.append(r)   # type: ignore[attr-defined]
+                self._render_result(r)           # type: ignore[attr-defined]
+        return lines
+
+    def flush_scenario(
+        self, outcome: str, short_msg: "Optional[str]" = None
+    ) -> "List[str]":
+        """Flush BDD scenario buffer and return printed lines. For testing only."""
+        with self.capture() as lines:
+            self._bdd_flush_scenario(outcome, short_msg)  # type: ignore[attr-defined]
+        return lines
+
+    def open_file(self, file: str) -> "List[str]":
+        """Open a file group and return printed lines. For testing only."""
+        with self.capture() as lines:
+            self._open_file_group(file)  # type: ignore[attr-defined]
+        return lines
+
+    def flush_file_summary(self) -> "List[str]":
+        """Flush file summary and return printed lines. For testing only."""
+        with self.capture() as lines:
+            self._flush_file_summary()  # type: ignore[attr-defined]
+        return lines
+
+    def simulate_before_scenario(self, *args) -> None:
+        """Simulate pytest_bdd_before_scenario hook. For testing only."""
+        self._bdd_before_scenario(*args)  # type: ignore[attr-defined]
+
+    def simulate_before_step(self, *args) -> None:
+        """Simulate pytest_bdd_before_step hook. For testing only."""
+        self._bdd_before_step(*args)  # type: ignore[attr-defined]
+
+    def simulate_after_step(self, *args) -> None:
+        """Simulate pytest_bdd_after_step hook. For testing only."""
+        self._bdd_after_step(*args)  # type: ignore[attr-defined]
+
+    def simulate_step_error(self, *args) -> None:
+        """Simulate pytest_bdd_step_error hook. For testing only."""
+        self._bdd_step_error(*args)  # type: ignore[attr-defined]
+
+    def simulate_step_func_lookup_error(self, *args) -> None:
+        """Simulate pytest_bdd_step_func_lookup_error hook. For testing only."""
+        self._bdd_step_func_lookup_error(*args)  # type: ignore[attr-defined]
+
+    def set_cur_file(self, file: "Optional[str]") -> None:
+        """Set the current file. For testing only."""
+        self._cur_file = file  # type: ignore[attr-defined]
+
+    @property
+    def results(self) -> "List[TestResult]":
+        """All rendered results. For testing only."""
+        return self.session.results  # type: ignore[attr-defined]
+
+    @property
+    def file_buf(self) -> "List[TestResult]":
+        """Current file buffer. For testing only."""
+        return self._file_buf  # type: ignore[attr-defined]
+
+    @property
+    def cur_file(self) -> "Optional[str]":
+        """Currently open file. For testing only."""
+        return self._cur_file  # type: ignore[attr-defined]
+
+class FormatterPlugin(_FormatterTestingMixin):
     """
     Drop-in replacement for pytest's default terminal reporter.
 
@@ -32,18 +128,19 @@ class FormatterPlugin:
     """
 
     def __init__(self) -> None:
-        self._results:    List[TestResult]      = []
-        self._t0:         float                  = 0.0
         self._cur_file:   Optional[str]          = None
         self._file_buf:   List[TestResult]       = []
-        self._col_errors: List[Tuple[str, str]]  = []
         self._cur_class:  Optional[str]          = None
+        self.session = _SessionState()
         self.bdd = _BDDState()
 
     # ── I/O ───────────────────────────────────────────────────────────────────
 
     def _p(self, text: str = "") -> None:
-        print(text, flush=True)
+        if self.session.output_buf is not None:
+            self.session.output_buf.append(text)
+        else:
+            print(text, flush=True)
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -355,7 +452,7 @@ class FormatterPlugin:
     @pytest.hookimpl(tryfirst=True)
     def pytest_sessionstart(self) -> None:
         """Record session start time."""
-        self._t0 = time.monotonic()
+        self.session.t0 = time.monotonic()
         self._p()
 
     @pytest.hookimpl(tryfirst=True)
@@ -388,7 +485,7 @@ class FormatterPlugin:
     def pytest_collectreport(self, report) -> None:
         """Capture collection-phase errors: bad imports, syntax errors, etc."""
         if report.failed and report.longrepr:
-            self._col_errors.append(
+            self.session.col_errors.append(
                 (str(report.nodeid), str(report.longrepr).strip())
             )
 
@@ -414,7 +511,7 @@ class FormatterPlugin:
 
         self._open_file_group(file)
         self._file_buf.append(result)
-        self._results.append(result)
+        self.session.results.append(result)
         self._render_result(result)
 
     @pytest.hookimpl(trylast=True)
@@ -423,17 +520,17 @@ class FormatterPlugin:
         if self._cur_file is not None:
             self._flush_file_summary()
 
-        if self._col_errors:
+        if self.session.col_errors:
             self._p()
             self._p(c_bold(c_error("COLLECTION ERRORS")))
-            for nodeid, msg in self._col_errors:
+            for nodeid, msg in self.session.col_errors:
                 self._p(f"  {c_error('⚠')}  {nodeid}")
                 for line in msg.splitlines():
                     self._p(f"    {c_dim(line)}")
 
-        elapsed = time.monotonic() - self._t0
+        elapsed = time.monotonic() - self.session.t0
         counts: Dict[str, int] = {}
-        for r in self._results:
+        for r in self.session.results:
             counts[r.outcome] = counts.get(r.outcome, 0) + 1
 
         parts = [

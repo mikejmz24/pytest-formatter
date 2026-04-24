@@ -35,7 +35,7 @@ class _BDDStep:
 
 
 @dataclass
-class _BDDState:
+class _BDDState:  # pylint: disable=too-many-instance-attributes
     """
     Mutable BDD rendering state — owned by FormatterPlugin.
 
@@ -81,4 +81,21 @@ class _BDDState:
     last_was_full_step:  bool             = False
 
 
-__all__ = ["MAX_E_LINES", "TestResult", "_BDDStep", "_BDDState"]
+@dataclass
+class _SessionState:
+    """
+    Session-level state for FormatterPlugin.
+
+    Extracted to:
+      - Reduce FormatterPlugin instance attribute count
+      - Group session-scoped data cleanly
+      - Allow tests to access session state through plugin.session
+    """
+
+    t0:         float                         = 0.0
+    results:    List["TestResult"]            = field(default_factory=list)
+    col_errors: List[Tuple[str, str]]         = field(default_factory=list)
+    output_buf: Optional[List[str]]           = None
+
+
+__all__ = ["MAX_E_LINES", "TestResult", "_BDDStep", "_BDDState", "_SessionState"]
