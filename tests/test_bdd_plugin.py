@@ -16,6 +16,7 @@ Coverage:
 """
 from types import SimpleNamespace
 
+import time
 import pytest_glaze
 from pytest_glaze import (FormatterPlugin, _BDDStep, c_bdd_scenario, register_plugin)
 from tests.helpers import (strip_ansi, _make_result)
@@ -23,7 +24,7 @@ from tests.helpers import (strip_ansi, _make_result)
 # ── Stubs ─────────────────────────────────────────────────────────────────────
 
 def _plugin() -> FormatterPlugin:
-    """Fresh FormatterPlugin with _glaze_plugin wired up."""
+    """Fresh FormatterPlugin with register_plugin wired up."""
     p = FormatterPlugin()
     register_plugin(p)
     return p
@@ -196,10 +197,7 @@ class TestBddBeforeScenarioScenarioHeader:
 class TestBddAfterStep:
     """Tests for _bdd_after_step — PASS step buffering."""
 
-    import time as _time
-
     def _run(self, p, step=None, nodeid="tests/bdd/test_checkout.py::test_guest_purchase"):
-        import time
         step = step or _step()
         p.bdd.step_t0[id(step)] = time.monotonic()
         p.simulate_after_step(_request(nodeid), _feature(), _scenario(), step, None, {})
@@ -216,7 +214,7 @@ class TestBddAfterStep:
         p = _plugin()
         p.bdd.scenario_buf = []
         step = _step(name="the cart contains 2 items")
-        import time; p.bdd.step_t0[id(step)] = time.monotonic()
+        p.bdd.step_t0[id(step)] = time.monotonic()
         p.simulate_after_step(_request(), _feature(), _scenario(), step, None, {})
         assert _buf_steps(p)[0].step.name == "the cart contains 2 items"
 
@@ -245,7 +243,6 @@ class TestBddStepError:
     """Tests for _bdd_step_error — FAIL/ERROR step buffering."""
 
     def _run(self, p, exc, step=None, nodeid="tests/bdd/test_checkout.py::test_discount_code"):
-        import time
         step = step or _step()
         p.bdd.step_t0[id(step)] = time.monotonic()
         p.simulate_step_error(_request(nodeid), _feature(), _scenario(), step, None, {}, exc)
@@ -419,7 +416,6 @@ class TestBddStepFuncLookupError:
     """Tests for _bdd_step_func_lookup_error — missing step definition."""
 
     def _run(self, p, step=None, nodeid="tests/bdd/test_edge_cases.py::test_missing_step"):
-        import time
         step = step or _step("When", "when", "a step that has no implementation")
         p.bdd.step_t0[id(step)] = time.monotonic()
         p.simulate_step_func_lookup_error(
@@ -648,7 +644,6 @@ class TestBddCompactMode:
         p.bdd.steps_mode = False
         self._make_pass_scenario(p)
         printed = p.flush_scenario("passed", None)
-        from pytest_glaze import _NO_COLOR
         combined = " ".join(printed)
         assert "PASS" in combined
 
@@ -780,16 +775,6 @@ class TestBddCompactSpacing:
         p.bdd.last_step_idx += 1
         printed = p.flush_scenario("passed", None)
         assert printed[0] == ""  # blank line printed
-
-    def ttest_full_step_to_compact_blank_line_printedest_full_step_to_compact_blank_line_printed(self):
-        """Blank line buffered by _bdd_before_scenario must print in compact mode."""
-        p = _plugin()
-        p.bdd.steps_mode = False
-        self._make_pass_scenario(p)
-        p.bdd.scenario_buf.insert(0, "")  # simulate _bdd_before_scenario spacing
-        p.bdd.last_step_idx += 1
-        printed = p.flush_scenario("passed", None)
-        assert printed[0] == ""  # blank line printed before compact scenario line
 
 
 class TestBddSkipFeatureHeader:

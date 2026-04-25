@@ -3,7 +3,7 @@ pytest_glaze/_hooks.py — Module-level pytest hooks and plugin registration.
 
 Module-level BDD hooks are required by pytest-bdd 8's strict hookspec
 validation which rejects 'self' in hookimpl signatures. They delegate to
-the FormatterPlugin instance via _glaze_plugin.
+the FormatterPlugin instance via _GLAZE_PLUGIN.
 
 pytest_addoption and pytest_configure handle plugin registration.
 """
@@ -23,26 +23,26 @@ except ImportError:  # pragma: no cover
 
 # Plugin instance — set in pytest_configure, None when glaze is inactive.
 # BDD hook functions gate on this so they are no-ops without --glaze.
-_glaze_plugin: Optional[FormatterPlugin] = None
+_GLAZE_PLUGIN: Optional[FormatterPlugin] = None
 
 
 # ── BDD hooks (module-level)  # pylint: disable=protected-access ──────────────────────────────────────────────────
 
 def pytest_bdd_before_scenario(request, feature, scenario) -> None:
-    if _glaze_plugin is not None:
-        _glaze_plugin._bdd_before_scenario(request, feature, scenario)
+    if _GLAZE_PLUGIN is not None:
+        _GLAZE_PLUGIN.simulate_before_scenario(request, feature, scenario)
 
 
 def pytest_bdd_before_step(request, feature, scenario, step, step_func) -> None:
-    if _glaze_plugin is not None:
-        _glaze_plugin._bdd_before_step(request, feature, scenario, step, step_func)
+    if _GLAZE_PLUGIN is not None:
+        _GLAZE_PLUGIN.simulate_before_step(request, feature, scenario, step, step_func)
 
 
 def pytest_bdd_after_step(
     request, feature, scenario, step, step_func, step_func_args
 ) -> None:
-    if _glaze_plugin is not None:
-        _glaze_plugin._bdd_after_step(
+    if _GLAZE_PLUGIN is not None:
+        _GLAZE_PLUGIN.simulate_after_step(
             request, feature, scenario, step, step_func, step_func_args
         )
 
@@ -50,8 +50,8 @@ def pytest_bdd_after_step(
 def pytest_bdd_step_error(
     request, feature, scenario, step, step_func, step_func_args, exception
 ) -> None:
-    if _glaze_plugin is not None:
-        _glaze_plugin._bdd_step_error(
+    if _GLAZE_PLUGIN is not None:
+        _GLAZE_PLUGIN.simulate_step_error(
             request, feature, scenario, step, step_func, step_func_args, exception
         )
 
@@ -59,15 +59,15 @@ def pytest_bdd_step_error(
 def pytest_bdd_step_func_lookup_error(
     request, feature, scenario, step, exception
 ) -> None:
-    if _glaze_plugin is not None:
-        _glaze_plugin._bdd_step_func_lookup_error(
+    if _GLAZE_PLUGIN is not None:
+        _GLAZE_PLUGIN.simulate_step_func_lookup_error(
             request, feature, scenario, step, exception
         )
 
 def register_plugin(plugin: "FormatterPlugin") -> None:
     """Register the active plugin instance. For testing only."""
-    global _glaze_plugin  # pylint: disable=global-statement
-    _glaze_plugin = plugin
+    global _GLAZE_PLUGIN  # pylint: disable=global-statement
+    _GLAZE_PLUGIN = plugin
 
 
 # ── Registration ──────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
     When --glaze is absent the function returns immediately.
     """
-    global _glaze_plugin  # pylint: disable=global-statement
+    global _GLAZE_PLUGIN  # pylint: disable=global-statement
 
     try:
         enabled = config.getoption("--glaze")
@@ -131,7 +131,7 @@ def pytest_configure(config: pytest.Config) -> None:
     else:
         plugin = existing
 
-    _glaze_plugin = plugin
+    _GLAZE_PLUGIN = plugin
 
     if (
         config.pluginmanager.get_plugin("terminalreporter") is None

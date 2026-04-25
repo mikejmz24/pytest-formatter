@@ -8,7 +8,7 @@ from pytest_glaze._colors import _NO_COLOR, c_bdd_scenario
 from pytest_glaze._colorizer import LineColorizer
 from pytest_glaze._formatter import FormatterPlugin
 from pytest_glaze._hooks import (
-    _glaze_plugin,
+    _GLAZE_PLUGIN as _glaze_plugin,
     pytest_addoption,
     pytest_configure,
     pytest_bdd_before_scenario,

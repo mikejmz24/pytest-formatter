@@ -298,44 +298,18 @@ class LineColorizer:
           approx table row     → obtained column red, expected column green
           any other line       → soft red
         """
-        if outcome == "skipped":
-            return c_skip(line)
-        if line.startswith("- ") or line == "-":
-            return c_pass(line)
-        if line.startswith("+ ") or line == "+":
-            return c_fail(line)
-        if line.startswith("? "):
-            return c_emsg(line)
-        if is_first:
-            return cls.color_assert_line(line)
-        if line.startswith("assert ") or line.startswith("AssertionError: assert "):
+        colored = cls._color_diff_line(line, outcome)
+        if colored is not None:
+            return colored
+        if is_first or line.startswith("assert ") or line.startswith("AssertionError: assert "):
             return cls.color_assert_line(line)
         parsed = cls.parse_comparison(line)
         if parsed is not None:
             received, op, expected = parsed
             prefix, value = cls.split_prefix(received)
             return c_emsg(prefix) + c_fail(value) + c_emsg(f" {op} ") + c_pass(expected)
-        for label, color_fn in cls._LABEL_COLORS:
-            if line.startswith(label):
-                return c_emsg(label) + color_fn(line[len(label):])  # type: ignore[operator]
-        table = cls.parse_approx_table_row(line)
-        if table is not None:
-            idx_col, obt_col, exp_col = table
-
-            def _color_col(col: str, color_fn) -> str:  # type: ignore[type-arg]
-                stripped = col.strip()
-                leading  = col[: len(col) - len(col.lstrip())]
-                trailing = col[len(col.rstrip()):]
-                return c_emsg(leading) + color_fn(stripped) + c_emsg(trailing)
-
-            return (
-                c_emsg(idx_col)
-                + c_emsg("|")
-                + _color_col(obt_col, c_fail)
-                + c_emsg("|")
-                + _color_col(exp_col, c_pass)
-            )
-        return c_emsg(line)
+        colored = cls._color_label_line(line) or cls._color_approx_row(line)
+        return colored if colored is not None else c_emsg(line)
 
     @classmethod
     def is_noise(cls, line: str) -> bool:
@@ -345,3 +319,49 @@ class LineColorizer:
         if line.startswith("?") and all(c in " -+^" for c in line[1:]):
             return True
         return False
+
+
+    @classmethod
+    def _color_approx_row(cls, line: str) -> Optional[str]:
+        """Color a pipe-separated approx table row. Returns None if not a table row."""
+        table = cls.parse_approx_table_row(line)
+        if table is None:
+            return None
+        idx_col, obt_col, exp_col = table
+
+        def _color_col(col: str, color_fn) -> str:  # type: ignore[type-arg]
+            stripped = col.strip()
+            leading  = col[: len(col) - len(col.lstrip())]
+            trailing = col[len(col.rstrip()):]
+            return c_emsg(leading) + color_fn(stripped) + c_emsg(trailing)
+
+        return (
+            c_emsg(idx_col)
+            + c_emsg("|")
+            + _color_col(obt_col, c_fail)
+            + c_emsg("|")
+            + _color_col(exp_col, c_pass)
+        )
+
+
+    @classmethod
+    def _color_label_line(cls, line: str) -> Optional[str]:
+        """Color Obtained:/Expected: label lines. Returns None if not a label line."""
+        for label, color_fn in cls._LABEL_COLORS:
+            if line.startswith(label):
+                return c_emsg(label) + color_fn(line[len(label):])  # type: ignore[operator]
+        return None
+
+
+    @classmethod
+    def _color_diff_line(cls, line: str, outcome: str) -> Optional[str]:
+        """Color diff prefix lines and skipped outcome. Returns None if not applicable."""
+        if outcome == "skipped":
+            return c_skip(line)
+        if line.startswith("- ") or line == "-":
+            return c_pass(line)
+        if line.startswith("+ ") or line == "+":
+            return c_fail(line)
+        if line.startswith("? "):
+            return c_emsg(line)
+        return None

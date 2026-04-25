@@ -233,48 +233,90 @@ class FormatterPlugin(_FormatterTestingMixin):
     def _render_result(self, r: TestResult) -> None:
         """Print one test result line, inline E lines, and captured sections."""
         if r.nodeid in self.bdd.handled:
-            if r.outcome == "error":
-                self._p(
-                    f"    {c_error('---')} {_BADGE['error']}  "
-                    f"{c_error('teardown failed')}{c_dim(f'  {r.duration * 1000:.1f}ms')}"
-                )
-                if r.short_msg:
-                    lines = [
-                        ln for ln in r.short_msg.splitlines()
-                        if not LineColorizer.is_noise(ln)
-                    ]
-                    for i, line in enumerate(lines):
-                        colored = LineColorizer.color_e_line(line, "error", is_first=i == 0)
-                        self._p(f"      {c_emsg('E')}  {colored}")
-                return
-            if self.bdd.pending_file:
-                self._open_file_group(self.bdd.pending_file)
-                self.bdd.pending_file = None
-            self._bdd_flush_scenario(r.outcome, r.short_msg)
+            self._render_bdd_handled(r)
             return
-
         if r.outcome == "skipped" and r.nodeid in self.bdd.scenario_names:
-            self._open_file_group(r.file)
-            feature_name = self.bdd.scenario_names.get(r.nodeid + "__feature__", "")
-            if feature_name and feature_name != self.bdd.cur_feature:
-                if self.bdd.any_feature_printed:
-                    self._p()
-                self._p(c_bdd_feature(f"  Feature: {feature_name}"))
-                self.bdd.cur_feature          = feature_name
-                self.bdd.any_feature_printed  = True
-            if self.bdd.last_was_full_step:
-                self._p()
-            color_fn      = _OUTCOME_COLOR["skipped"]
-            badge         = _BADGE["skipped"]
-            scenario_name = self.bdd.scenario_names[r.nodeid]
-            self._p(f"    {color_fn('---')} {badge}  {color_fn(f'Scenario: {scenario_name}')}")
-            if r.short_msg:
-                colored = LineColorizer.color_e_line(r.short_msg, "skipped", is_first=True)
-                self._p(f"      {c_emsg('E')}  {colored}")
-            self.bdd.last_was_full_step = False
+            self._render_bdd_skip(r)
             return
+        self._render_normal(r)
 
-        # ── Normal (non-BDD) rendering ────────────────────────────────────────
+
+    # ── BDD helpers ───────────────────────────────────────────────────────────
+
+    @staticmethod
+    def extract_exception_msg(exc: BaseException) -> Optional[str]:
+        """Concise inline message from a step exception."""
+        raw = str(exc).strip()
+        if not raw:
+            return type(exc).__name__ or None
+        if not isinstance(exc, AssertionError):
+            raw = f"{type(exc).__name__}: {raw}"
+        if "StepDefinitionNotFoundError" in raw and ". " in raw:
+            raw = raw[:raw.index(". ") + 1]
+        lines = [ln for ln in raw.splitlines() if ln.strip()][:MAX_E_LINES]
+        return "\n".join(lines) or None
+
+    def _render_bdd_step_line(self, bdd_step: _BDDStep) -> None:
+        badge     = _BADGE.get(bdd_step.outcome, bdd_step.outcome.upper())
+        color_fn  = _OUTCOME_COLOR.get(bdd_step.outcome, c_dim)
+        keyword   = getattr(bdd_step.step, "keyword", "").rstrip()
+        dur       = c_dim(f"  {bdd_step.duration * 1000:.1f}ms")
+        step_text = color_fn(f"{keyword} {bdd_step.step.name}")
+        self._p(f"      {color_fn('---')} {badge}  {step_text}{dur}")
+
+        if bdd_step.short_msg:
+            lines = [
+                ln for ln in bdd_step.short_msg.splitlines()
+                if not LineColorizer.is_noise(ln)
+            ]
+            for i, line in enumerate(lines):
+                colored = LineColorizer.color_e_line(line, bdd_step.outcome, is_first=i == 0)
+                self._p(f"        {c_emsg('E')}  {colored}")
+
+    def _render_bdd_handled(self, r: TestResult) -> None:
+        """Render a result that was already handled by BDD hooks."""
+        if r.outcome == "error":
+            self._p(
+                f"    {c_error('---')} {_BADGE['error']}  "
+                f"{c_error('teardown failed')}{c_dim(f'  {r.duration * 1000:.1f}ms')}"
+            )
+            if r.short_msg:
+                lines = [ln for ln in r.short_msg.splitlines()
+                         if not LineColorizer.is_noise(ln)]
+                for i, line in enumerate(lines):
+                    colored = LineColorizer.color_e_line(line, "error", is_first=i == 0)
+                    self._p(f"      {c_emsg('E')}  {colored}")
+            return
+        if self.bdd.pending_file:
+            self._open_file_group(self.bdd.pending_file)
+            self.bdd.pending_file = None
+        self._bdd_flush_scenario(r.outcome, r.short_msg)
+
+
+    def _render_bdd_skip(self, r: TestResult) -> None:
+        """Render a skipped BDD scenario."""
+        self._open_file_group(r.file)
+        feature_name = self.bdd.scenario_names.get(r.nodeid + "__feature__", "")
+        if feature_name and feature_name != self.bdd.cur_feature:
+            if self.bdd.any_feature_printed:
+                self._p()
+            self._p(c_bdd_feature(f"  Feature: {feature_name}"))
+            self.bdd.cur_feature         = feature_name
+            self.bdd.any_feature_printed = True
+        if self.bdd.last_was_full_step:
+            self._p()
+        color_fn      = _OUTCOME_COLOR["skipped"]
+        badge         = _BADGE["skipped"]
+        scenario_name = self.bdd.scenario_names[r.nodeid]
+        self._p(f"    {color_fn('---')} {badge}  {color_fn(f'Scenario: {scenario_name}')}")
+        if r.short_msg:
+            colored = LineColorizer.color_e_line(r.short_msg, "skipped", is_first=True)
+            self._p(f"      {c_emsg('E')}  {colored}")
+        self.bdd.last_was_full_step = False
+
+
+    def _render_normal(self, r: TestResult) -> None:
+        """Render a normal (non-BDD) test result."""
         badge    = _BADGE.get(r.outcome, r.outcome.upper())
         color_fn = _OUTCOME_COLOR.get(r.outcome, c_dim)
         dur      = c_dim(f"  {r.duration * 1000:.1f}ms")
@@ -310,37 +352,6 @@ class FormatterPlugin(_FormatterTestingMixin):
                 for ln in content.rstrip().splitlines():
                     self._p(f"    {ln}")
 
-    # ── BDD helpers ───────────────────────────────────────────────────────────
-
-    @staticmethod
-    def extract_exception_msg(exc: BaseException) -> Optional[str]:
-        """Concise inline message from a step exception."""
-        raw = str(exc).strip()
-        if not raw:
-            return type(exc).__name__ or None
-        if not isinstance(exc, AssertionError):
-            raw = f"{type(exc).__name__}: {raw}"
-        if "StepDefinitionNotFoundError" in raw and ". " in raw:
-            raw = raw[:raw.index(". ") + 1]
-        lines = [ln for ln in raw.splitlines() if ln.strip()][:MAX_E_LINES]
-        return "\n".join(lines) or None
-
-    def _render_bdd_step_line(self, bdd_step: _BDDStep) -> None:
-        badge     = _BADGE.get(bdd_step.outcome, bdd_step.outcome.upper())
-        color_fn  = _OUTCOME_COLOR.get(bdd_step.outcome, c_dim)
-        keyword   = getattr(bdd_step.step, "keyword", "").rstrip()
-        dur       = c_dim(f"  {bdd_step.duration * 1000:.1f}ms")
-        step_text = color_fn(f"{keyword} {bdd_step.step.name}")
-        self._p(f"      {color_fn('---')} {badge}  {step_text}{dur}")
-
-        if bdd_step.short_msg:
-            lines = [
-                ln for ln in bdd_step.short_msg.splitlines()
-                if not LineColorizer.is_noise(ln)
-            ]
-            for i, line in enumerate(lines):
-                colored = LineColorizer.color_e_line(line, bdd_step.outcome, is_first=i == 0)
-                self._p(f"        {c_emsg('E')}  {colored}")
 
     def _bdd_flush_scenario(self, outcome: str, short_msg: Optional[str]) -> None:
         """
