@@ -7,6 +7,7 @@ the FormatterPlugin instance via _GLAZE_PLUGIN.
 
 pytest_addoption and pytest_configure handle plugin registration.
 """
+
 from __future__ import annotations
 
 import io
@@ -27,6 +28,7 @@ _GLAZE_PLUGIN: Optional[FormatterPlugin] = None
 
 
 # ── BDD hooks (module-level)  # pylint: disable=protected-access ──────────────────────────────────────────────────
+
 
 def pytest_bdd_before_scenario(request, feature, scenario) -> None:
     if _GLAZE_PLUGIN is not None:
@@ -64,6 +66,7 @@ def pytest_bdd_step_func_lookup_error(
             request, feature, scenario, step, exception
         )
 
+
 def register_plugin(plugin: "FormatterPlugin") -> None:
     """Register the active plugin instance. For testing only."""
     global _GLAZE_PLUGIN  # pylint: disable=global-statement
@@ -71,6 +74,7 @@ def register_plugin(plugin: "FormatterPlugin") -> None:
 
 
 # ── Registration ──────────────────────────────────────────────────────────────
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Declare the --glaze and --bdd-steps flags."""

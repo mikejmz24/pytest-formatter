@@ -1,5 +1,6 @@
 # ── Plugin activation ─────────────────────────────────────────────────────────
 
+
 def test_glaze_flag_activates_formatter(pytester):
     """--glaze flag must activate the formatter and suppress default output."""
     pytester.makepyfile("""
@@ -23,6 +24,7 @@ def test_without_glaze_uses_default_output(pytester):
 
 
 # ── Pass / Fail / Skip / Error ────────────────────────────────────────────────
+
 
 def test_passing_test_shows_pass_badge(pytester):
     pytester.makepyfile("""
@@ -71,6 +73,7 @@ def test_error_in_setup_shows_error_badge(pytester):
 
 # ── Session summary ───────────────────────────────────────────────────────────
 
+
 def test_total_line_appears_at_end(pytester):
     pytester.makepyfile("""
         def test_a(): pass
@@ -94,6 +97,7 @@ def test_per_file_summary_appears(pytester):
 
 # ── Collection errors ─────────────────────────────────────────────────────────
 
+
 def test_collection_error_surfaced(pytester):
     pytester.makepyfile("""
         import nonexistent_module_xyz
@@ -104,6 +108,7 @@ def test_collection_error_surfaced(pytester):
 
 
 # ── Terminal safety ───────────────────────────────────────────────────────────
+
 
 def test_ansi_injection_in_test_name_does_not_corrupt_output(pytester):
     """A test name containing ANSI escape sequences must not corrupt output."""
@@ -116,7 +121,9 @@ def test_ansi_injection_in_test_name_does_not_corrupt_output(pytester):
     assert "PASS" in result.stdout.str()
     assert "Total:" in result.stdout.str()
 
+
 # ── BDD session cases ─────────────────────────────────────────────────────────
+
 
 def test_bdd_compact_mode_default(pytester):
     """BDD scenarios collapse to single line in compact mode by default."""
@@ -135,13 +142,16 @@ def test_bdd_compact_mode_default(pytester):
         @then("the order is confirmed")
         def confirmed(cart): pass
     """)
-    pytester.makefile(".feature", test="""
+    pytester.makefile(
+        ".feature",
+        test="""
         Feature: Shopping cart
           Scenario: Guest completes a purchase
             Given the cart contains 2 items
             When the guest submits payment
             Then the order is confirmed
-    """)
+    """,
+    )
     result = pytester.runpytest("--glaze", "-p", "no:terminal")
     result.stdout.fnmatch_lines(["*PASS*Scenario: Guest completes a purchase*"])
 

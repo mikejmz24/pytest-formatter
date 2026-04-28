@@ -10,43 +10,49 @@ Coverage:
   classify       — raw report → canonical outcome string
   extract_short  — longrepr → inline E-line message
 """
+
 from types import SimpleNamespace
 
 import pytest_glaze
+from pytest_glaze._types import MAX_E_LINES
 from pytest_glaze import FormatterPlugin
-from tests.helpers import (_make_result, strip_ansi)
-
+from tests.helpers import _make_result, strip_ansi
 
 # ── split_nodeid ──────────────────────────────────────────────────────────────
+
 
 class TestSplitNodeid:
     """Tests for FormatterPlugin.split_nodeid()."""
 
     def test_normal_nodeid(self):
         assert FormatterPlugin.split_nodeid("tests/test_foo.py::test_bar") == (
-            "tests/test_foo.py", "test_bar"
+            "tests/test_foo.py",
+            "test_bar",
         )
 
     def test_parameterized_nodeid(self):
         """Bracket characters in the name must be preserved as-is."""
         assert FormatterPlugin.split_nodeid("tests/test_foo.py::test_bar[x-y]") == (
-            "tests/test_foo.py", "test_bar[x-y]"
+            "tests/test_foo.py",
+            "test_bar[x-y]",
         )
 
     def test_class_method_nodeid(self):
         """partition('::') splits on the first '::' only — rest stays in name."""
-        assert FormatterPlugin.split_nodeid("tests/test_foo.py::TestClass::test_method") == (
-            "tests/test_foo.py", "TestClass::test_method"
-        )
+        assert FormatterPlugin.split_nodeid(
+            "tests/test_foo.py::TestClass::test_method"
+        ) == ("tests/test_foo.py", "TestClass::test_method")
 
     def test_no_separator_returns_full_path_as_name(self):
         """When there is no '::' the whole string is used as both file and name."""
         assert FormatterPlugin.split_nodeid("tests/test_foo.py") == (
-            "tests/test_foo.py", "tests/test_foo.py"
+            "tests/test_foo.py",
+            "tests/test_foo.py",
         )
 
 
 # ── classify ──────────────────────────────────────────────────────────────────
+
 
 class TestClassify:
     """Tests for FormatterPlugin.classify() — outcome normalisation."""
@@ -68,14 +74,23 @@ class TestClassify:
         assert FormatterPlugin.classify(self._report(outcome="skipped")) == "skipped"
 
     def test_setup_failure_becomes_error(self):
-        assert FormatterPlugin.classify(self._report(when="setup", outcome="failed")) == "error"
+        assert (
+            FormatterPlugin.classify(self._report(when="setup", outcome="failed"))
+            == "error"
+        )
 
     def test_teardown_failure_becomes_error(self):
-        assert FormatterPlugin.classify(self._report(when="teardown", outcome="failed")) == "error"
+        assert (
+            FormatterPlugin.classify(self._report(when="teardown", outcome="failed"))
+            == "error"
+        )
 
     def test_setup_pass_stays_passed(self):
         """A passing setup phase must NOT be reclassified as error."""
-        assert FormatterPlugin.classify(self._report(when="setup", outcome="passed")) == "passed"
+        assert (
+            FormatterPlugin.classify(self._report(when="setup", outcome="passed"))
+            == "passed"
+        )
 
     def test_xfailed(self):
         r = self._report(outcome="failed", wasxfail="known regression")
@@ -87,6 +102,7 @@ class TestClassify:
 
 
 # ── extract_short ─────────────────────────────────────────────────────────────
+
 
 class _FakeLongrepr:
     """Minimal longrepr stub — string representation only, with optional reprcrash."""
@@ -107,11 +123,15 @@ class TestExtractShort:
 
     def test_xfailed_with_reason(self):
         r = SimpleNamespace(wasxfail="known regression", longrepr=None)
-        assert FormatterPlugin.extract_short(r, "xfailed") == "xfailed: known regression"
+        assert (
+            FormatterPlugin.extract_short(r, "xfailed") == "xfailed: known regression"
+        )
 
     def test_xpassed_with_reason(self):
         r = SimpleNamespace(wasxfail="unexpectedly fixed", longrepr=None)
-        assert FormatterPlugin.extract_short(r, "xpassed") == "xpassed: unexpectedly fixed"
+        assert (
+            FormatterPlugin.extract_short(r, "xpassed") == "xpassed: unexpectedly fixed"
+        )
 
     def test_xfailed_no_reason(self):
         r = SimpleNamespace(wasxfail="", longrepr=None)
@@ -145,7 +165,9 @@ class TestExtractShort:
             "  E  AssertionError: assert 3 == 30\n"
             "  E  assert 3 == 30\n"
         )
-        r = SimpleNamespace(longrepr=_FakeLongrepr(text, reprcrash_msg="AssertionError"))
+        r = SimpleNamespace(
+            longrepr=_FakeLongrepr(text, reprcrash_msg="AssertionError")
+        )
         result = FormatterPlugin.extract_short(r, "failed")
         assert result is not None
         assert "AssertionError: assert 3 == 30" in result
@@ -157,7 +179,7 @@ class TestExtractShort:
         r = SimpleNamespace(longrepr=_FakeLongrepr(lines, reprcrash_msg="err"))
         result = FormatterPlugin.extract_short(r, "failed")
         assert result is not None
-        assert len(result.splitlines()) == pytest_glaze.MAX_E_LINES
+        assert len(result.splitlines()) == MAX_E_LINES
 
     def test_reprcrash_message_fallback_when_no_e_lines(self):
         text = "some traceback without any E-prefixed lines"
@@ -181,6 +203,7 @@ class TestExtractShort:
 
         # ── class grouping ────────────────────────────────────────────────────────────
 
+
 class TestClassGrouping:
     """Tests for class-based grouping — header, blank lines, method-only names."""
 
@@ -189,12 +212,16 @@ class TestClassGrouping:
 
     def test_class_header_printed_on_first_method(self):
         p = FormatterPlugin()
-        printed = p.render_result(self._make_result("TestParseAssert::test_simple_int_equality"))
+        printed = p.render_result(
+            self._make_result("TestParseAssert::test_simple_int_equality")
+        )
         assert any("TestParseAssert" in l and "::" not in l for l in printed)
 
     def test_method_name_only_on_result_line(self):
         p = FormatterPlugin()
-        printed = p.render_result(self._make_result("TestParseAssert::test_simple_int_equality"))
+        printed = p.render_result(
+            self._make_result("TestParseAssert::test_simple_int_equality")
+        )
         result_lines = [l for l in printed if "PASS" in l or "---" in l]
         assert result_lines
         assert all("TestParseAssert" not in l for l in result_lines)
@@ -233,15 +260,13 @@ class TestClassGrouping:
         printed = p.render_result(self._make_result("TestParseBareAssert::test_b"))
         assert printed[0] == ""  # blank line before new class header
 
+
 class TestTerminalSafety:
     """ANSI escape sequences in test names must not corrupt terminal output."""
 
     def test_ansi_in_test_name_stripped_before_render(self):
         p = FormatterPlugin()
-        result = _make_result(
-            name="\033[2Jtest_evil",
-            file="tests/test_evil.py"
-        )
+        result = _make_result(name="\033[2Jtest_evil", file="tests/test_evil.py")
         printed = p.render_result(result)
         result_line = next(l for l in printed if "---" in strip_ansi(l))
         # Control sequence must not appear in output
@@ -263,8 +288,7 @@ class TestTerminalSafety:
     def test_ansi_in_class_name_stripped(self):
         p = FormatterPlugin()
         result = _make_result(
-            name="\033[2JTestEvil::test_method",
-            file="tests/test_evil.py"
+            name="\033[2JTestEvil::test_method", file="tests/test_evil.py"
         )
         printed = p.render_result(result)
         assert not any("\033[2J" in l for l in printed)

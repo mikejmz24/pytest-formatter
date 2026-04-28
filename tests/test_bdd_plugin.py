@@ -14,14 +14,20 @@ Coverage:
   _bdd_flush_scenario       — xfail/xpass correction, buffer cleared after flush
   _bdd_before_step          — start time recording, Background label insertion
 """
-from types import SimpleNamespace
 
 import time
+from types import SimpleNamespace
+
 import pytest_glaze
-from pytest_glaze import (FormatterPlugin, _BDDStep, c_bdd_scenario, register_plugin)
-from tests.helpers import (strip_ansi, _make_result)
+from pytest_glaze._types import MAX_E_LINES
+from pytest_glaze import FormatterPlugin
+from pytest_glaze._types import _BDDStep
+from pytest_glaze._colors import c_bdd_scenario
+from pytest_glaze._hooks import register_plugin
+from tests.helpers import _make_result, strip_ansi
 
 # ── Stubs ─────────────────────────────────────────────────────────────────────
+
 
 def _plugin() -> FormatterPlugin:
     """Fresh FormatterPlugin with register_plugin wired up."""
@@ -38,7 +44,11 @@ def _scenario(name: str = "Guest completes a purchase"):
     return SimpleNamespace(name=name)
 
 
-def _step(keyword: str = "Given", type_: str = "given", name: str = "the cart contains 2 items"):
+def _step(
+    keyword: str = "Given",
+    type_: str = "given",
+    name: str = "the cart contains 2 items",
+):
     return SimpleNamespace(keyword=keyword, type=type_, name=name)
 
 
@@ -58,6 +68,7 @@ def _buf_steps(p: FormatterPlugin) -> list:
 
 # ── extract_exception_msg ────────────────────────────────────────────────────
 
+
 class TestExtractExceptionMsg:
     """Tests for FormatterPlugin.extract_exception_msg()."""
 
@@ -76,7 +87,9 @@ class TestExtractExceptionMsg:
         assert msg == "RuntimeError: inventory timed out"
 
     def test_connection_error_prepends_type(self):
-        msg = FormatterPlugin.extract_exception_msg(ConnectionError("could not reach db.internal"))
+        msg = FormatterPlugin.extract_exception_msg(
+            ConnectionError("could not reach db.internal")
+        )
         assert msg.startswith("ConnectionError:")
 
     def test_empty_exception_returns_type_name(self):
@@ -87,7 +100,7 @@ class TestExtractExceptionMsg:
         """More than MAX_E_LINES lines must be truncated."""
         big = "\n".join(f"line {i}" for i in range(30))
         msg = FormatterPlugin.extract_exception_msg(RuntimeError(big))
-        assert len(msg.splitlines()) == pytest_glaze.MAX_E_LINES
+        assert len(msg.splitlines()) == MAX_E_LINES
 
     def test_blank_lines_excluded_from_count(self):
         """Blank lines in the exception message must not count toward MAX_E_LINES."""
@@ -97,6 +110,7 @@ class TestExtractExceptionMsg:
 
 
 # ── _bdd_before_scenario: Feature header ─────────────────────────────────────
+
 
 class TestBddBeforeScenarioFeatureHeader:
     """Buffer contents for Feature header — when it appears and when it doesn't."""
@@ -118,10 +132,12 @@ class TestBddBeforeScenarioFeatureHeader:
     def test_new_feature_blank_line_buffered_before_header(self):
         """When the feature changes, a blank line must precede the new Feature header."""
         p = _plugin()
-        p.bdd.cur_feature       = "Old Feature"
+        p.bdd.cur_feature = "Old Feature"
         p.bdd.any_feature_printed = True
-        p.bdd.first_in_file     = False
-        p.simulate_before_scenario(_request(), _feature("Shopping cart checkout"), _scenario())
+        p.bdd.first_in_file = False
+        p.simulate_before_scenario(
+            _request(), _feature("Shopping cart checkout"), _scenario()
+        )
         strings = _buf_strings(p)
         feature_idx = next(i for i, s in enumerate(strings) if "Feature:" in s)
         assert strings[feature_idx - 1] == ""
@@ -129,9 +145,9 @@ class TestBddBeforeScenarioFeatureHeader:
     def test_same_feature_no_duplicate_header(self):
         """Consecutive scenarios of the same feature must not repeat the header."""
         p = _plugin()
-        p.bdd.cur_feature       = "Shopping cart checkout"
+        p.bdd.cur_feature = "Shopping cart checkout"
         p.bdd.any_feature_printed = True
-        p.bdd.first_in_file     = False
+        p.bdd.first_in_file = False
         p.simulate_before_scenario(_request(), _feature(), _scenario())
         strings = _buf_strings(p)
         assert not any("Feature:" in s for s in strings)
@@ -150,21 +166,26 @@ class TestBddBeforeScenarioFeatureHeader:
 
 # ── _bdd_before_scenario: Scenario header ────────────────────────────────────
 
+
 class TestBddBeforeScenarioScenarioHeader:
     """Buffer contents for Scenario header and blank-line spacing."""
 
     def test_scenario_name_in_buffer(self):
         p = _plugin()
-        p.simulate_before_scenario(_request(), _feature(), _scenario("Guest completes a purchase"))
+        p.simulate_before_scenario(
+            _request(), _feature(), _scenario("Guest completes a purchase")
+        )
         strings = _buf_strings(p)
-        assert any("Scenario:" in s and "Guest completes a purchase" in s for s in strings)
+        assert any(
+            "Scenario:" in s and "Guest completes a purchase" in s for s in strings
+        )
 
     def test_blank_line_between_same_feature_scenarios(self):
         """Two scenarios in the same feature must be separated by a blank line."""
         p = _plugin()
-        p.bdd.cur_feature       = "Shopping cart checkout"
+        p.bdd.cur_feature = "Shopping cart checkout"
         p.bdd.any_feature_printed = True
-        p.bdd.first_in_file     = False
+        p.bdd.first_in_file = False
         p.simulate_before_scenario(_request(), _feature(), _scenario("Scenario B"))
         strings = _buf_strings(p)
         assert "" in strings
@@ -174,7 +195,7 @@ class TestBddBeforeScenarioScenarioHeader:
         p = _plugin()
         p.simulate_before_scenario(_request(), _feature(), _scenario())
         strings = _buf_strings(p)
-        feature_idx  = next(i for i, s in enumerate(strings) if "Feature:" in s)
+        feature_idx = next(i for i, s in enumerate(strings) if "Feature:" in s)
         scenario_idx = next(i for i, s in enumerate(strings) if "Scenario:" in s)
         assert feature_idx < scenario_idx
 
@@ -194,10 +215,13 @@ class TestBddBeforeScenarioScenarioHeader:
 
 # ── _bdd_after_step ───────────────────────────────────────────────────────────
 
+
 class TestBddAfterStep:
     """Tests for _bdd_after_step — PASS step buffering."""
 
-    def _run(self, p, step=None, nodeid="tests/bdd/test_checkout.py::test_guest_purchase"):
+    def _run(
+        self, p, step=None, nodeid="tests/bdd/test_checkout.py::test_guest_purchase"
+    ):
         step = step or _step()
         p.bdd.step_t0[id(step)] = time.monotonic()
         p.simulate_after_step(_request(nodeid), _feature(), _scenario(), step, None, {})
@@ -239,13 +263,18 @@ class TestBddAfterStep:
 
 # ── _bdd_step_error ───────────────────────────────────────────────────────────
 
+
 class TestBddStepError:
     """Tests for _bdd_step_error — FAIL/ERROR step buffering."""
 
-    def _run(self, p, exc, step=None, nodeid="tests/bdd/test_checkout.py::test_discount_code"):
+    def _run(
+        self, p, exc, step=None, nodeid="tests/bdd/test_checkout.py::test_discount_code"
+    ):
         step = step or _step()
         p.bdd.step_t0[id(step)] = time.monotonic()
-        p.simulate_step_error(_request(nodeid), _feature(), _scenario(), step, None, {}, exc)
+        p.simulate_step_error(
+            _request(nodeid), _feature(), _scenario(), step, None, {}, exc
+        )
         return step
 
     def test_assertion_error_outcome_is_failed(self):
@@ -275,7 +304,11 @@ class TestBddStepError:
     def test_nodeid_added_to_handled(self):
         p = _plugin()
         p.bdd.scenario_buf = []
-        self._run(p, AssertionError("x"), nodeid="tests/bdd/test_checkout.py::test_discount_code")
+        self._run(
+            p,
+            AssertionError("x"),
+            nodeid="tests/bdd/test_checkout.py::test_discount_code",
+        )
         assert "tests/bdd/test_checkout.py::test_discount_code" in p.bdd.handled
 
     def test_last_step_idx_updated(self):
@@ -287,12 +320,15 @@ class TestBddStepError:
 
 # ── _bdd_flush_scenario ───────────────────────────────────────────────────────
 
+
 class TestBddFlushScenario:
     """Tests for _bdd_flush_scenario — xfail/xpass correction and buffer clearing."""
 
     def _make_step_buf(self, p, outcome="passed", short_msg=None):
-        bdd_step = _BDDStep(step=_step(), outcome=outcome, duration=0.1, short_msg=short_msg)
-        p.bdd.scenario_buf  = [bdd_step]
+        bdd_step = _BDDStep(
+            step=_step(), outcome=outcome, duration=0.1, short_msg=short_msg
+        )
+        p.bdd.scenario_buf = [bdd_step]
         p.bdd.last_step_idx = 0
         return bdd_step
 
@@ -342,7 +378,7 @@ class TestBddFlushScenario:
         """Empty string items in the buffer must trigger a blank line print."""
         p = _plugin()
         p.bdd.last_was_full_step = True
-        p.bdd.scenario_buf  = [""]
+        p.bdd.scenario_buf = [""]
         p.bdd.last_step_idx = -1
         printed = p.flush_scenario("passed", None)
         assert "" in printed
@@ -353,6 +389,7 @@ class TestBddFlushScenario:
 
 
 # ── _bdd_before_step ──────────────────────────────────────────────────────────
+
 
 class TestBddBeforeStep:
     """Tests for _bdd_before_step — timing and Background label insertion."""
@@ -370,8 +407,7 @@ class TestBddBeforeStep:
         p.bdd.scenario_buf = []
         bg_step = _step("Given", "given", "the database is available")
         feature = SimpleNamespace(
-            name="Auth",
-            background=SimpleNamespace(steps=[bg_step])
+            name="Auth", background=SimpleNamespace(steps=[bg_step])
         )
         p.simulate_before_step(_request(), feature, _scenario(), bg_step, None)
         strings = _buf_strings(p)
@@ -382,7 +418,7 @@ class TestBddBeforeStep:
         p = _plugin()
         p.bdd.scenario_buf = []
         step = _step()
-        feature = _feature()   # background=None
+        feature = _feature()  # background=None
         p.simulate_before_step(_request(), feature, _scenario(), step, None)
         strings = _buf_strings(p)
         assert not any("Background:" in s for s in strings)
@@ -392,10 +428,9 @@ class TestBddBeforeStep:
         p = _plugin()
         p.bdd.scenario_buf = []
         bg_step1 = _step("Given", "given", "step one")
-        bg_step2 = _step("And",   "given", "step two")
+        bg_step2 = _step("And", "given", "step two")
         feature = SimpleNamespace(
-            name="Auth",
-            background=SimpleNamespace(steps=[bg_step1, bg_step2])
+            name="Auth", background=SimpleNamespace(steps=[bg_step1, bg_step2])
         )
         p.simulate_before_step(_request(), feature, _scenario(), bg_step2, None)
         strings = _buf_strings(p)
@@ -410,17 +445,24 @@ class TestBddBeforeStep:
         strings = _buf_strings(p)
         assert not any("Background:" in s for s in strings)
 
+
 # ── _bdd_step_func_lookup_error ───────────────────────────────────────────────
+
 
 class TestBddStepFuncLookupError:
     """Tests for _bdd_step_func_lookup_error — missing step definition."""
 
-    def _run(self, p, step=None, nodeid="tests/bdd/test_edge_cases.py::test_missing_step"):
+    def _run(
+        self, p, step=None, nodeid="tests/bdd/test_edge_cases.py::test_missing_step"
+    ):
         step = step or _step("When", "when", "a step that has no implementation")
         p.bdd.step_t0[id(step)] = time.monotonic()
         p.simulate_step_func_lookup_error(
-            _request(nodeid), _feature(), _scenario(), step,
-            Exception("StepDefinitionNotFoundError: Step definition is not found")
+            _request(nodeid),
+            _feature(),
+            _scenario(),
+            step,
+            Exception("StepDefinitionNotFoundError: Step definition is not found"),
         )
         return step
 
@@ -445,6 +487,7 @@ class TestBddStepFuncLookupError:
 
 # ── blank line spacing ────────────────────────────────────────────────────────
 
+
 class TestBddBlankLineSpacing:
     """Blank line rules between features and scenarios."""
 
@@ -454,7 +497,7 @@ class TestBddBlankLineSpacing:
         p = _plugin()
         # Simulate: file group already open, feature already printed
         p.set_cur_file("tests/bdd/test_authentication.py")
-        p.bdd.cur_feature       = "User authentication flows"
+        p.bdd.cur_feature = "User authentication flows"
         p.bdd.any_feature_printed = True
         # Now simulate new file group opening via _render_result path
         # _bdd_first_in_file must be True after _open_file_group resets it
@@ -463,7 +506,7 @@ class TestBddBlankLineSpacing:
         p.simulate_before_scenario(
             _request("tests/bdd/test_checkout.py::test_guest_purchase"),
             _feature("Shopping cart checkout"),
-            _scenario("Guest completes a purchase")
+            _scenario("Guest completes a purchase"),
         )
         blank_lines = [s for s in _buf_strings(p) if s == ""]
         # Exactly one blank line in the buffer (the between-feature one)
@@ -473,7 +516,7 @@ class TestBddBlankLineSpacing:
         """After first scenario flushes, _bdd_first_in_file is reset to True
         by _open_file_group. Second scenario must still get a blank line."""
         p = _plugin()
-        p.bdd.cur_feature       = "Shopping cart checkout"
+        p.bdd.cur_feature = "Shopping cart checkout"
         p.bdd.any_feature_printed = True
         # Simulate what happens after first scenario flushes and
         # _open_file_group runs (same file → no-op on cur_file,
@@ -482,20 +525,22 @@ class TestBddBlankLineSpacing:
         p.simulate_before_scenario(
             _request("tests/bdd/test_checkout.py::test_gift_card"),
             _feature("Shopping cart checkout"),
-            _scenario("Logged-in user applies a gift card")
+            _scenario("Logged-in user applies a gift card"),
         )
         strings = _buf_strings(p)
         assert "" in strings
 
+
 # ── pytest_collection_finish: BDD scenario name indexing ─────────────────────
+
 
 class TestBddScenarioNameIndexing:
     """Tests for scenario name extraction from collected BDD items."""
 
     def _make_item(self, nodeid, doc=None, scenario_obj=None):
         fn = SimpleNamespace(
-            __doc__      = doc,
-            __scenario__ = scenario_obj,
+            __doc__=doc,
+            __scenario__=scenario_obj,
         )
         return SimpleNamespace(nodeid=nodeid, function=fn)
 
@@ -511,8 +556,10 @@ class TestBddScenarioNameIndexing:
         session = SimpleNamespace(items=[item])
         _ = p.flush_scenario("passed", None)
         p.pytest_collection_finish(session)
-        assert p.bdd.scenario_names["tests/bdd/test_checkout.py::test_guest_purchase"] == \
-            "Guest completes a purchase"
+        assert (
+            p.bdd.scenario_names["tests/bdd/test_checkout.py::test_guest_purchase"]
+            == "Guest completes a purchase"
+        )
 
     def test_scenario_name_from_doc_fallback(self):
         """When __scenario__ is None, name parsed from __doc__."""
@@ -525,9 +572,12 @@ class TestBddScenarioNameIndexing:
         session = SimpleNamespace(items=[item])
         p.flush_scenario("passed", None)
         p.pytest_collection_finish(session)
-        assert p.bdd.scenario_names[
-            "tests/bdd/test_checkout.py::test_unimplemented_feature"
-        ] == "Feature not yet implemented"
+        assert (
+            p.bdd.scenario_names[
+                "tests/bdd/test_checkout.py::test_unimplemented_feature"
+            ]
+            == "Feature not yet implemented"
+        )
 
     def test_non_bdd_item_not_indexed(self):
         """Regular pytest items with no __doc__ or __scenario__ must be ignored."""
@@ -555,19 +605,25 @@ class TestBddScenarioNameIndexing:
         p.pytest_collection_finish(session)
         assert "tests/bdd/test_checkout.py::test_something" not in p.bdd.scenario_names
 
+
 # Add to test_bdd_plugin.py
+
 
 class TestBddSkipRendering:
     """Skip renders as Scenario line indented under Feature, not at file level."""
 
     def test_skip_shows_scenario_name_not_function_name(self):
         p = _plugin()
-        p.bdd.scenario_names["tests/bdd/test_checkout.py::test_unimplemented_feature"] = \
-            "Feature not yet implemented"
+        p.bdd.scenario_names[
+            "tests/bdd/test_checkout.py::test_unimplemented_feature"
+        ] = "Feature not yet implemented"
         printed = p.flush_scenario("passed", None)
-        r = _make_result("test_unimplemented_feature", "skipped",
-                 "Skipped: feature flag not enabled in CI",
-                 file="tests/bdd/test_checkout.py")
+        r = _make_result(
+            "test_unimplemented_feature",
+            "skipped",
+            "Skipped: feature flag not enabled in CI",
+            file="tests/bdd/test_checkout.py",
+        )
         printed += p.render_result(r)
         combined = " ".join(strip_ansi(l) for l in printed)
         assert "Feature not yet implemented" in combined
@@ -577,8 +633,9 @@ class TestBddSkipRendering:
         p = _plugin()
         p.bdd.scenario_names["tests/bdd/test_checkout.py::test_skip"] = "My Scenario"
         printed = p.flush_scenario("passed", None)
-        r = _make_result("test_skip", "skipped", "Skipped: reason",
-                 file="tests/bdd/test_checkout.py")
+        r = _make_result(
+            "test_skip", "skipped", "Skipped: reason", file="tests/bdd/test_checkout.py"
+        )
         printed += p.render_result(r)
         skip_line = next(l for l in printed if "My Scenario" in l)
         assert skip_line.startswith("    ")  # indented under Feature level
@@ -589,7 +646,7 @@ class TestBddStepNotFoundMessage:
 
     def test_step_not_found_message_trimmed(self):
         long_msg = (
-            'StepDefinitionNotFoundError: Step definition is not found: '
+            "StepDefinitionNotFoundError: Step definition is not found: "
             'When "a step that has no implementation". '
             'Line 18 in scenario "Step with no implementation" '
             'in the feature "/path/to/edge_cases.feature"'
@@ -602,6 +659,7 @@ class TestBddStepNotFoundMessage:
 
 # ── compact mode ──────────────────────────────────────────────────────────────
 
+
 class TestBddCompactMode:
     """Default compact mode — PASS scenarios collapse to one line."""
 
@@ -610,11 +668,13 @@ class TestBddCompactMode:
         p.bdd.scenario_buf = [c_bdd_scenario(f"    Scenario: {scenario_name}")]
         for keyword, type_, name in [
             ("Given", "given", "the cart contains 2 items"),
-            ("When",  "when",  "the guest submits valid payment"),
-            ("Then",  "then",  "the order confirmation is shown"),
+            ("When", "when", "the guest submits valid payment"),
+            ("Then", "then", "the order confirmation is shown"),
         ]:
             step = _step(keyword, type_, name)
-            bdd_step = _BDDStep(step=step, outcome="passed", duration=0.1, short_msg=None)
+            bdd_step = _BDDStep(
+                step=step, outcome="passed", duration=0.1, short_msg=None
+            )
             p.bdd.scenario_buf.append(bdd_step)
         p.bdd.last_step_idx = len(p.bdd.scenario_buf) - 1
 
@@ -654,7 +714,7 @@ class TestBddCompactMode:
         self._make_pass_scenario(p)
         # Override last step to failed
         last = p.bdd.scenario_buf[p.bdd.last_step_idx]
-        last.outcome   = "failed"
+        last.outcome = "failed"
         last.short_msg = "assert 95.0 == 90"
         printed = p.flush_scenario("failed", "assert 95.0 == 90")
         step_lines = [l for l in printed if "Given" in l or "When" in l or "Then" in l]
@@ -666,7 +726,7 @@ class TestBddCompactMode:
         p.bdd.steps_mode = False
         self._make_pass_scenario(p)
         last = p.bdd.scenario_buf[p.bdd.last_step_idx]
-        last.outcome   = "error"
+        last.outcome = "error"
         last.short_msg = "RuntimeError: timeout"
         printed = p.flush_scenario("error", "RuntimeError: timeout")
         step_lines = [l for l in printed if "Given" in l or "When" in l or "Then" in l]
@@ -695,11 +755,12 @@ class TestBddCompactMode:
         p.bdd.steps_mode = False
         self._make_pass_scenario(p)
         last = p.bdd.scenario_buf[p.bdd.last_step_idx]
-        last.outcome   = "failed"
+        last.outcome = "failed"
         last.short_msg = "assert x"
         printed = p.flush_scenario("passed", None)
         p.flush_scenario("failed", "assert x")
         assert printed[-1] != ""
+
 
 class TestBddCompactSpacing:
     """Blank line rules between all scenario type combinations."""
@@ -717,8 +778,8 @@ class TestBddCompactSpacing:
         p.bdd.scenario_buf = [c_bdd_scenario(f"    Scenario: {name}")]
         for keyword, type_, sname in [
             ("Given", "given", "step one"),
-            ("When",  "when",  "step two"),
-            ("Then",  "then",  "step three"),
+            ("When", "when", "step two"),
+            ("Then", "then", "step three"),
         ]:
             step = _step(keyword, type_, sname)
             p.bdd.scenario_buf.append(
@@ -738,9 +799,9 @@ class TestBddCompactSpacing:
         # Second scenario — _bdd_before_scenario prepends "" to the buffer
         self._make_pass_scenario(p, "Scenario B")
         p.bdd.scenario_buf.insert(0, "")  # simulate what _bdd_before_scenario does
-        p.bdd.last_step_idx += 1          # account for the inserted item
+        p.bdd.last_step_idx += 1  # account for the inserted item
         last = p.bdd.scenario_buf[p.bdd.last_step_idx]
-        last.outcome   = "failed"
+        last.outcome = "failed"
         last.short_msg = "assert x"
         printed2 = p.flush_scenario("failed", "assert x")
 
@@ -789,9 +850,12 @@ class TestBddSkipFeatureHeader:
             "tests/bdd/test_checkout.py::test_unimplemented_feature__feature__"
         ] = "Shopping cart checkout"
         printed = p.flush_scenario("passed", None)
-        r = _make_result("test_unimplemented_feature", "skipped",
-                 "Skipped: feature flag not enabled in CI",
-                 file="tests/bdd/test_checkout.py")
+        r = _make_result(
+            "test_unimplemented_feature",
+            "skipped",
+            "Skipped: feature flag not enabled in CI",
+            file="tests/bdd/test_checkout.py",
+        )
         printed += p.render_result(r)
         assert any("Shopping cart checkout" in l for l in printed)
         assert any("Feature not yet implemented" in l for l in printed)
@@ -799,7 +863,7 @@ class TestBddSkipFeatureHeader:
     def test_skip_no_duplicate_feature_header(self):
         """If feature already printed, skip must not reprint it."""
         p = _plugin()
-        p.bdd.cur_feature       = "Shopping cart checkout"
+        p.bdd.cur_feature = "Shopping cart checkout"
         p.bdd.any_feature_printed = True
         p.bdd.scenario_names[
             "tests/bdd/test_checkout.py::test_unimplemented_feature"
@@ -808,15 +872,19 @@ class TestBddSkipFeatureHeader:
             "tests/bdd/test_checkout.py::test_unimplemented_feature__feature__"
         ] = "Shopping cart checkout"
         printed = p.flush_scenario("passed", None)
-        r = _make_result("test_unimplemented_feature", "skipped",
-                 "Skipped: feature flag not enabled in CI",
-                 file="tests/bdd/test_checkout.py")
+        r = _make_result(
+            "test_unimplemented_feature",
+            "skipped",
+            "Skipped: feature flag not enabled in CI",
+            file="tests/bdd/test_checkout.py",
+        )
         printed += p.render_result(r)
         feature_lines = [l for l in printed if "Shopping cart checkout" in l]
         assert len(feature_lines) == 0
 
 
 # ── teardown error rendering ──────────────────────────────────────────────────
+
 
 class TestBddTeardownError:
     """Teardown errors on BDD-handled nodeids render as standalone ERROR lines."""
@@ -825,9 +893,12 @@ class TestBddTeardownError:
         p = _plugin()
         p.bdd.handled.add("tests/bdd/test_edge_cases.py::test_teardown_failure")
         printed = p.flush_scenario("passed", None)
-        r = _make_result("test_teardown_failure", "error",
-                 "RuntimeError: cleanup failed",
-                 file="tests/bdd/test_edge_cases.py")
+        r = _make_result(
+            "test_teardown_failure",
+            "error",
+            "RuntimeError: cleanup failed",
+            file="tests/bdd/test_edge_cases.py",
+        )
         printed += p.render_result(r)
         assert any("teardown" in l.lower() for l in printed)
         assert any("RuntimeError" in l for l in printed)
@@ -838,8 +909,11 @@ class TestBddTeardownError:
         p.bdd.handled.add("tests/bdd/test_edge_cases.py::test_teardown_failure")
         p.bdd.scenario_buf = []  # already flushed
         p.flush_scenario("passed", None)
-        r = _make_result("test_teardown_failure", "error",
-                 "RuntimeError: cleanup failed",
-                 file="tests/bdd/test_edge_cases.py")
+        r = _make_result(
+            "test_teardown_failure",
+            "error",
+            "RuntimeError: cleanup failed",
+            file="tests/bdd/test_edge_cases.py",
+        )
         p.render_result(r)  # don't need printed here, just checking side effect
         assert p.bdd.scenario_buf == []

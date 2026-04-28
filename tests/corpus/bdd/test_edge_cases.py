@@ -8,13 +8,14 @@ Covers:
   14. Full And/But chain — And/But after Given, When, Then
       (exercises keyword type inheritance for color rendering)
 """
+
 from __future__ import annotations
 
 import pytest
 from pytest_bdd import given, parsers, scenario, then, when
 
-
 # ── Scenario 11: ERROR in Given ───────────────────────────────────────────────
+
 
 @scenario("features/edge_cases.feature", "Database connection fails at setup")
 def test_given_failure() -> None: ...
@@ -38,6 +39,7 @@ def profile_returned(db_conn: dict) -> None:
 
 # ── Scenario 12: Xpass ────────────────────────────────────────────────────────
 
+
 @pytest.mark.xfail(reason="bug was fixed in v1.2", strict=False)
 @scenario("features/edge_cases.feature", "Fixed bug in tax calculation")
 def test_fixed_bug() -> None: ...
@@ -48,7 +50,9 @@ def order_total(amount: str) -> float:
     return float(amount)
 
 
-@when(parsers.parse("tax at {rate} percent is applied"), target_fixture="total_with_tax")
+@when(
+    parsers.parse("tax at {rate} percent is applied"), target_fixture="total_with_tax"
+)
 def apply_tax(order_total: float, rate: str) -> float:
     return order_total * (1 + float(rate) / 100)
 
@@ -59,6 +63,7 @@ def assert_total_with_tax(total_with_tax: float, expected: str) -> None:
 
 
 # ── Scenario 13: Step not found ───────────────────────────────────────────────
+
 
 @scenario("features/edge_cases.feature", "Step with no implementation")
 def test_missing_step() -> None: ...
@@ -72,12 +77,14 @@ def defined_step() -> dict:
 # "When a step that has no implementation" is intentionally not defined.
 # pytest-bdd raises StepDefinitionNotFoundError at runtime.
 
+
 @then("this step is never reached")
 def never_reached(state: dict) -> None:
     pass  # pragma: no cover
 
 
 # ── Scenario 14: Full And/But keyword chain ───────────────────────────────────
+
 
 @scenario("features/edge_cases.feature", "Full keyword chain")
 def test_full_keyword_chain() -> None: ...
@@ -88,7 +95,7 @@ def system_initialized() -> dict:
     return {"ready": True, "cache": False, "status": None, "body": None, "error": None}
 
 
-@given("the cache is warm")   # And — type inherits "given" → gray
+@given("the cache is warm")  # And — type inherits "given" → gray
 def cache_warm(system: dict) -> None:
     system["cache"] = True
 
@@ -98,7 +105,7 @@ def request_sent(system: dict) -> None:
     system["status"] = 200
 
 
-@when("the response is received")   # And — type inherits "when" → yellow
+@when("the response is received")  # And — type inherits "when" → yellow
 def response_received(system: dict) -> None:
     system["body"] = {"data": "ok"}
 
@@ -108,12 +115,12 @@ def status_success(system: dict) -> None:
     assert system["status"] == 200
 
 
-@then("the body is not empty")   # And — type inherits "then" → green
+@then("the body is not empty")  # And — type inherits "then" → green
 def body_not_empty(system: dict) -> None:
     assert system["body"] is not None
 
 
-@then("the error field is null")   # But — type inherits "then" → green
+@then("the error field is null")  # But — type inherits "then" → green
 def error_field_null(system: dict) -> None:
     assert system["error"] is None
 

@@ -5,13 +5,11 @@ Single source of truth for:
   - ANSI color constants (derived from _colors.py)
   - strip_ansi / is_colorless / has_color helpers
 """
+
 from __future__ import annotations
+
 import re
 from types import SimpleNamespace
-# from typing import Any
-
-from pytest_glaze._types import TestResult, _BDDStep
-
 
 from pytest_glaze._colors import (
     _BABY_BLUE,
@@ -23,20 +21,25 @@ from pytest_glaze._colors import (
     _STANDARD_RED,
     _STEEL_BLUE,
 )
+from pytest_glaze._types import TestResult, _BDDStep
+
+# from typing import Any
+
 
 # ── Color constants ───────────────────────────────────────────────────────────
 
-GREEN        = f"\033[{_BRIGHT_GREEN}m"
-BRIGHT_RED   = f"\033[{_BRIGHT_RED}m"
-YELLOW       = f"\033[{_BRIGHT_YELLOW}m"
+GREEN = f"\033[{_BRIGHT_GREEN}m"
+BRIGHT_RED = f"\033[{_BRIGHT_RED}m"
+YELLOW = f"\033[{_BRIGHT_YELLOW}m"
 STANDARD_RED = f"\033[{_STANDARD_RED}m"
-SOFT_PEACH   = f"\033[{_SOFT_PEACH}m"
-DIM          = f"\033[{_DIM}m"
-BABY_BLUE    = f"\033[{_BABY_BLUE}m"
-STEEL_BLUE   = f"\033[{_STEEL_BLUE}m"
+SOFT_PEACH = f"\033[{_SOFT_PEACH}m"
+DIM = f"\033[{_DIM}m"
+BABY_BLUE = f"\033[{_BABY_BLUE}m"
+STEEL_BLUE = f"\033[{_STEEL_BLUE}m"
 
 
 # ── ANSI helpers ──────────────────────────────────────────────────────────────
+
 
 def strip_ansi(text: str) -> str:
     """Remove all ANSI escape sequences from text."""
@@ -51,6 +54,7 @@ def is_colorless(text: str) -> bool:
 def has_color(text: str, color: str) -> bool:
     """Return True if text contains the given ANSI color code."""
     return color in text
+
 
 def name_is_uncolored(line: str, name: str) -> bool:
     """Return True if `name` appears in `line` outside any ANSI color block.
@@ -67,7 +71,9 @@ def name_is_uncolored(line: str, name: str) -> bool:
             return True
     return False
 
+
 # ── Test result factories ─────────────────────────────────────────────────────
+
 
 def _make_result(
     name: str = "test_example",
@@ -78,13 +84,13 @@ def _make_result(
     file: str = "tests/test_example.py",
 ) -> TestResult:
     return TestResult(
-        nodeid    = f"{file}::{name}",
-        file      = file,
-        name      = name,
-        outcome   = outcome,
-        duration  = duration,
-        short_msg = short_msg,
-        sections  = sections or [],
+        nodeid=f"{file}::{name}",
+        file=file,
+        name=name,
+        outcome=outcome,
+        duration=duration,
+        short_msg=short_msg,
+        sections=sections or [],
     )
 
 
@@ -100,8 +106,8 @@ def _make_bdd_step(
     short_msg: str | None = None,
 ) -> _BDDStep:
     return _BDDStep(
-        step      = _make_step(keyword, name),
-        outcome   = outcome,
-        duration  = duration,
-        short_msg = short_msg,
+        step=_make_step(keyword, name),
+        outcome=outcome,
+        duration=duration,
+        short_msg=short_msg,
     )

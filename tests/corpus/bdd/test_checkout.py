@@ -15,13 +15,14 @@ Run the "before" state (no BDD-aware hooks yet):
     make test-raw SUITE=tests/corpus/test_bdd.py
     make test-bdd
 """
+
 from __future__ import annotations
 
 import pytest
 from pytest_bdd import given, parsers, scenario, then, when
 
-
 # ── Scenario 1: All steps pass ────────────────────────────────────────────────
+
 
 @scenario("features/checkout.feature", "Guest completes a purchase")
 def test_guest_purchase() -> None: ...
@@ -43,6 +44,7 @@ def order_confirmed(cart: dict) -> None:
 
 
 # ── Scenario 2: And / But keyword variety ─────────────────────────────────────
+
 
 @scenario("features/checkout.feature", "Logged-in user applies a gift card")
 def test_gift_card() -> None: ...
@@ -79,6 +81,7 @@ def reference_price_shown(cart: dict) -> None:
 
 # ── Scenario 3: AssertionError in Then (intentional FAIL) ─────────────────────
 
+
 @scenario("features/checkout.feature", "Discount code reduces the cart total")
 def test_discount_code() -> None: ...
 
@@ -102,6 +105,7 @@ def assert_discounted_total(cart: dict) -> None:
 
 # ── Scenario 4: Non-assertion error in When (intentional ERROR) ───────────────
 
+
 @scenario("features/checkout.feature", "Inventory service is unavailable")
 def test_inventory_error() -> None: ...
 
@@ -122,6 +126,7 @@ def item_available(cart: dict) -> None:  # pragma: no cover
 
 
 # ── Scenario 5: Background-style shared setup ─────────────────────────────────
+
 
 @scenario("features/checkout.feature", "Authenticated user checks out")
 def test_authenticated_checkout() -> None: ...
@@ -149,6 +154,7 @@ def checkout_displayed(session: dict) -> None:
 
 # ── Scenario 6: Scenario Outline (parametrized) ───────────────────────────────
 
+
 @scenario("features/checkout.feature", "Cart total with quantity")
 def test_cart_total_parametrized() -> None: ...
 
@@ -168,7 +174,9 @@ def assert_subtotal(line_total: int, subtotal: str) -> None:
     # Row 3 (price=5, qty=4) → 20, not 21 → intentional FAIL.
     assert line_total == int(subtotal)
 
+
 # ── Scenario 7: Skipped ───────────────────────────────────────────────────────
+
 
 @pytest.mark.skip(reason="feature flag not enabled in CI")
 @scenario("features/checkout.feature", "Feature not yet implemented")
@@ -191,6 +199,7 @@ def page_not_found(flag: bool) -> None:
 
 
 # ── Scenario 8: Expected failure (xfail) ─────────────────────────────────────
+
 
 @pytest.mark.xfail(reason="promo stacking bug — see issue #42", strict=False)
 @scenario("features/checkout.feature", "Known bug in promo stacking")

@@ -13,10 +13,11 @@ Coverage:
   parse_approx_table_row — pipe-delimited approx table row detector
   is_noise            — noise-line suppression filter
 """
+
 from pytest_glaze import LineColorizer
 
-
 # ── parse_assert ──────────────────────────────────────────────────────────────
+
 
 class TestParseAssert:  # pylint: disable=too-many-public-methods
     """Tests for LineColorizer.parse_assert() — the assertion text splitter."""
@@ -27,7 +28,11 @@ class TestParseAssert:  # pylint: disable=too-many-public-methods
         assert LineColorizer.parse_assert("assert 3 == 30") == ("3", "==", "30")
 
     def test_simple_float_equality(self):
-        assert LineColorizer.parse_assert("assert 3.14 == 2.71") == ("3.14", "==", "2.71")
+        assert LineColorizer.parse_assert("assert 3.14 == 2.71") == (
+            "3.14",
+            "==",
+            "2.71",
+        )
 
     def test_simple_string_equality(self):
         result = LineColorizer.parse_assert("assert 'INTGPT-109' == 'INTGPT-1091'")
@@ -68,12 +73,16 @@ class TestParseAssert:  # pylint: disable=too-many-public-methods
 
     def test_is_not(self):
         assert LineColorizer.parse_assert("assert None is not None") == (
-            "None", "is not", "None"
+            "None",
+            "is not",
+            "None",
         )
 
     def test_is_not_with_none_values(self):
         assert LineColorizer.parse_assert("assert None is not None") == (
-            "None", "is not", "None"
+            "None",
+            "is not",
+            "None",
         )
 
     def test_is(self):
@@ -81,12 +90,16 @@ class TestParseAssert:  # pylint: disable=too-many-public-methods
 
     def test_in_operator(self):
         assert LineColorizer.parse_assert("assert 'foo' in ['bar', 'baz']") == (
-            "'foo'", "in", "['bar', 'baz']"
+            "'foo'",
+            "in",
+            "['bar', 'baz']",
         )
 
     def test_not_in_operator(self):
         assert LineColorizer.parse_assert("assert 'x' not in ['x', 'y']") == (
-            "'x'", "not in", "['x', 'y']"
+            "'x'",
+            "not in",
+            "['x', 'y']",
         )
 
     # ── containers ────────────────────────────────────────────────────────────
@@ -124,12 +137,18 @@ class TestParseAssert:  # pylint: disable=too-many-public-methods
     # ── non-assertions ────────────────────────────────────────────────────────
 
     def test_exception_line_returns_none(self):
-        assert LineColorizer.parse_assert(
-            "AttributeError: 'NoneType' object has no attribute 'get'"
-        ) is None
+        assert (
+            LineColorizer.parse_assert(
+                "AttributeError: 'NoneType' object has no attribute 'get'"
+            )
+            is None
+        )
 
     def test_runtime_error_returns_none(self):
-        assert LineColorizer.parse_assert("RuntimeError: Setup exploded intentionally") is None
+        assert (
+            LineColorizer.parse_assert("RuntimeError: Setup exploded intentionally")
+            is None
+        )
 
     def test_plain_message_returns_none(self):
         assert LineColorizer.parse_assert("got 5, expected 15") is None
@@ -143,6 +162,7 @@ class TestParseAssert:  # pylint: disable=too-many-public-methods
 
 
 # ── parse_bare_assert ─────────────────────────────────────────────────────────
+
 
 class TestParseBareAssert:
     """Tests for LineColorizer.parse_bare_assert() — bare assertion extractor."""
@@ -191,6 +211,7 @@ class TestParseBareAssert:
 
 # ── split_prefix ──────────────────────────────────────────────────────────────
 
+
 class TestSplitPrefix:
     """Tests for LineColorizer.split_prefix() — prose-prefix detector."""
 
@@ -238,13 +259,17 @@ class TestSplitPrefix:
 
     def test_colon_not_followed_by_value_char(self):
         """': ' followed by a letter that isn't a value must not split."""
-        assert LineColorizer.split_prefix("the left set: extra") == ("", "the left set: extra")
+        assert LineColorizer.split_prefix("the left set: extra") == (
+            "",
+            "the left set: extra",
+        )
 
     def test_empty_string(self):
         assert LineColorizer.split_prefix("") == ("", "")
 
 
 # ── parse_approx_table_row ────────────────────────────────────────────────────
+
 
 class TestParseApproxTableRow:
     """Tests for LineColorizer.parse_approx_table_row() — pipe-table detector."""
@@ -272,19 +297,27 @@ class TestParseApproxTableRow:
 
     def test_header_row_returns_none(self):
         """'Index | Obtained | Expected' is the header — must not be parsed as data."""
-        assert LineColorizer.parse_approx_table_row("Index | Obtained            | Expected") is None
+        assert (
+            LineColorizer.parse_approx_table_row(
+                "Index | Obtained            | Expected"
+            )
+            is None
+        )
 
     def test_non_table_line_returns_none(self):
         assert LineColorizer.parse_approx_table_row("comparison failed") is None
-        assert LineColorizer.parse_approx_table_row("Max absolute difference: 0.1") is None
+        assert (
+            LineColorizer.parse_approx_table_row("Max absolute difference: 0.1") is None
+        )
         assert LineColorizer.parse_approx_table_row("assert 1.0 == 2.0 ± 0.02") is None
 
     def test_wrong_pipe_count_returns_none(self):
-        assert LineColorizer.parse_approx_table_row("a | b") is None          # 1 pipe
+        assert LineColorizer.parse_approx_table_row("a | b") is None  # 1 pipe
         assert LineColorizer.parse_approx_table_row("a | b | c | d") is None  # 3 pipes
 
 
 # ── is_noise ──────────────────────────────────────────────────────────────────
+
 
 class TestIsNoise:
     """Tests for noise-line detection."""
@@ -293,7 +326,10 @@ class TestIsNoise:
         assert LineColorizer.is_noise("Use -v to get more diff") is True
 
     def test_use_vv_is_noise(self):
-        assert LineColorizer.is_noise("Omitting 1 identical items, use -vv to show") is True
+        assert (
+            LineColorizer.is_noise("Omitting 1 identical items, use -vv to show")
+            is True
+        )
 
     def test_omitting_is_noise(self):
         assert LineColorizer.is_noise("Omitting 3 identical items") is True
@@ -316,6 +352,7 @@ class TestIsNoise:
 
 
 # ── parse_comparison (tested indirectly — regression guards) ──────────────────
+
 
 class TestParseComparisonRejects:
     """Guards against false operator matches in prose lines.

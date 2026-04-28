@@ -1,6 +1,8 @@
 # tests/conftest.py
 """Shared test infrastructure for all pytest-glaze unit tests."""
+
 import pytest
+
 import pytest_glaze._colors as _colors
 
 

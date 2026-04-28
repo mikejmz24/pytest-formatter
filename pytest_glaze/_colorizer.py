@@ -4,14 +4,13 @@ pytest_glaze/_colorizer.py — Line coloring logic.
 Fully independent of pytest internals — operates on plain strings.
 Depends only on _colors and _types.
 """
-from __future__ import annotations
-import re
 
+from __future__ import annotations
+
+import re
 from typing import Optional, Tuple
 
-from pytest_glaze._colors import (
-    c_emsg, c_fail, c_pass, c_skip,
-)
+from pytest_glaze._colors import c_emsg, c_fail, c_pass, c_skip
 
 
 class LineColorizer:
@@ -27,10 +26,16 @@ class LineColorizer:
     # Operators ordered longest-first to prevent partial matches
     # (e.g. "is not" must be tried before "is", "not in" before "in")
     _CMP_OPS: Tuple[str, ...] = (
-        "is not", "not in",
-        "==", "!=", "<=", ">=",
-        "is", "in",
-        "<", ">",
+        "is not",
+        "not in",
+        "==",
+        "!=",
+        "<=",
+        ">=",
+        "is",
+        "in",
+        "<",
+        ">",
     )
 
     # E lines that add no value in compact output.
@@ -107,8 +112,12 @@ class LineColorizer:
             return "", text
         i = 0
         while i < len(text) - 2:
-            if text[i] == ":" and text[i + 1] == " " and text[i + 2] in cls.VALUE_STARTERS:
-                return text[: i + 2], text[i + 2:]
+            if (
+                text[i] == ":"
+                and text[i + 1] == " "
+                and text[i + 2] in cls.VALUE_STARTERS
+            ):
+                return text[: i + 2], text[i + 2 :]
             i += 1
         return "", text
 
@@ -128,16 +137,16 @@ class LineColorizer:
         """
         body = text
         if body.startswith("AssertionError: "):
-            body = body[len("AssertionError: "):]
+            body = body[len("AssertionError: ") :]
         if not body.startswith("assert "):
             return None
-        inner = body[len("assert "):]
+        inner = body[len("assert ") :]
         result = cls._find_op(inner)
         if result is None:
             return None
         pos, op = result
         received = inner[:pos].strip()
-        expected = inner[pos + len(f" {op} "):].strip()
+        expected = inner[pos + len(f" {op} ") :].strip()
         return received, op, expected
 
     @classmethod
@@ -156,10 +165,10 @@ class LineColorizer:
         """
         body = text
         if body.startswith("AssertionError: "):
-            body = body[len("AssertionError: "):]
+            body = body[len("AssertionError: ") :]
         if not body.startswith("assert "):
             return None
-        inner = body[len("assert "):].strip()
+        inner = body[len("assert ") :].strip()
         if not inner or cls._find_op(inner) is not None:
             return None
         return inner
@@ -204,7 +213,7 @@ class LineColorizer:
             if depth == 0:
                 for op in cls._CMP_OPS:
                     pattern = f" {op} "
-                    if text[i: i + len(pattern)] == pattern:
+                    if text[i : i + len(pattern)] == pattern:
                         return i, op
 
             i += 1
@@ -227,7 +236,7 @@ class LineColorizer:
             return None
         pos, op = result
         received = text[:pos].strip()
-        expected = text[pos + len(f" {op} "):].strip()
+        expected = text[pos + len(f" {op} ") :].strip()
         if not received or not expected:
             return None
         _, received_value = cls.split_prefix(received)
@@ -257,12 +266,16 @@ class LineColorizer:
         parsed = cls.parse_assert(text)
         if parsed is not None:
             received, op, expected = parsed
-            prefix = c_emsg("AssertionError: ") if text.startswith("AssertionError: ") else ""
+            prefix = (
+                c_emsg("AssertionError: ")
+                if text.startswith("AssertionError: ")
+                else ""
+            )
             if op == "is not":
-                colored_op       = c_emsg(" is ")
+                colored_op = c_emsg(" is ")
                 colored_expected = c_pass(f"not {expected}")
             else:
-                colored_op       = c_emsg(f" {op} ")
+                colored_op = c_emsg(f" {op} ")
                 colored_expected = c_pass(expected)
             return (
                 prefix
@@ -274,7 +287,11 @@ class LineColorizer:
 
         bare = cls.parse_bare_assert(text)
         if bare is not None:
-            prefix = c_emsg("AssertionError: ") if text.startswith("AssertionError: ") else ""
+            prefix = (
+                c_emsg("AssertionError: ")
+                if text.startswith("AssertionError: ")
+                else ""
+            )
             return prefix + c_emsg("assert ") + c_fail(bare)
 
         return c_emsg(text)
@@ -302,7 +319,11 @@ class LineColorizer:
         colored = cls._color_diff_line(line, outcome)
         if colored is not None:
             return colored
-        if is_first or line.startswith("assert ") or line.startswith("AssertionError: assert "):
+        if (
+            is_first
+            or line.startswith("assert ")
+            or line.startswith("AssertionError: assert ")
+        ):
             return cls.color_assert_line(line)
         parsed = cls.parse_comparison(line)
         if parsed is not None:
@@ -321,7 +342,6 @@ class LineColorizer:
             return True
         return False
 
-
     @classmethod
     def _color_approx_row(cls, line: str) -> Optional[str]:
         """Color a pipe-separated approx table row. Returns None if not a table row."""
@@ -332,8 +352,8 @@ class LineColorizer:
 
         def _color_col(col: str, color_fn) -> str:  # type: ignore[type-arg]
             stripped = col.strip()
-            leading  = col[: len(col) - len(col.lstrip())]
-            trailing = col[len(col.rstrip()):]
+            leading = col[: len(col) - len(col.lstrip())]
+            trailing = col[len(col.rstrip()) :]
             return c_emsg(leading) + color_fn(stripped) + c_emsg(trailing)
 
         return (
@@ -344,15 +364,13 @@ class LineColorizer:
             + _color_col(exp_col, c_pass)
         )
 
-
     @classmethod
     def _color_label_line(cls, line: str) -> Optional[str]:
         """Color Obtained:/Expected: label lines. Returns None if not a label line."""
         for label, color_fn in cls._LABEL_COLORS:
             if line.startswith(label):
-                return c_emsg(label) + color_fn(line[len(label):])  # type: ignore[operator]
+                return c_emsg(label) + color_fn(line[len(label) :])  # type: ignore[operator]
         return None
-
 
     @classmethod
     def _color_diff_line(cls, line: str, outcome: str) -> Optional[str]:
@@ -370,7 +388,7 @@ class LineColorizer:
     @staticmethod
     def sanitize(text: str) -> str:
         """Strip ANSI escape sequences from untrusted input (test names, messages).
-        
+
         Prevents malicious test names from injecting terminal control sequences
         into the formatter output.
         """

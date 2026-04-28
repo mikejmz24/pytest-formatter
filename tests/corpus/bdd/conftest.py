@@ -6,13 +6,14 @@ Covers:
   - pytest_bdd_apply_tag hook — custom tag → pytest mark conversion
   - Session-scoped fixture reused by steps
 """
+
 from __future__ import annotations
 
 import pytest
 from pytest_bdd import given, then, when
 
-
 # ── Session-scoped shared fixture ─────────────────────────────────────────────
+
 
 @pytest.fixture(scope="session")
 def app_config() -> dict:
@@ -21,6 +22,7 @@ def app_config() -> dict:
 
 
 # ── Shared step definitions ───────────────────────────────────────────────────
+
 
 @given("the application is running", target_fixture="app")
 def app_is_running(app_config: dict) -> dict:
@@ -43,6 +45,7 @@ def service_is_healthy(health: dict) -> None:
 
 
 # ── pytest_bdd_apply_tag hook ─────────────────────────────────────────────────
+
 
 def pytest_bdd_apply_tag(tag: str, function) -> bool | None:
     """

@@ -5,23 +5,31 @@ pytest-glaze BDD rendering behavior.
 Uses pytest-bdd to express BDD rendering specs as Gherkin scenarios.
 Steps call FormatterPlugin directly and assert on printed output.
 """
+
 from __future__ import annotations
 
 import pytest
 from pytest_bdd import given, parsers, scenario, then, when
 
 from pytest_glaze import FormatterPlugin
+from pytest_glaze._colors import c_bdd_feature, c_bdd_scenario
 
 # ── ANSI color codes ──────────────────────────────────────────────────────────
 from tests.helpers import (
-    GREEN, BRIGHT_RED, YELLOW, STANDARD_RED, DIM,
-    BABY_BLUE, STEEL_BLUE,
+    BABY_BLUE,
+    BRIGHT_RED,
+    DIM,
+    GREEN,
+    STANDARD_RED,
+    STEEL_BLUE,
+    YELLOW,
+    _make_bdd_step,
+    _make_result,
     strip_ansi,
-    _make_result, _make_bdd_step,
 )
-from pytest_glaze._colors import c_bdd_feature, c_bdd_scenario
 
 # ── Plugin fixture ────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def plugin() -> FormatterPlugin:
@@ -36,6 +44,7 @@ def plugin() -> FormatterPlugin:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _flush(plugin, outcome, short_msg=None):
     return plugin.flush_scenario(outcome, short_msg)
 
@@ -47,129 +56,215 @@ def _get_lines(plugin):
 
 # ── Scenario declarations ─────────────────────────────────────────────────────
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Passing scenario renders as a single compact line in compact mode")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Passing scenario renders as a single compact line in compact mode",
+)
 def test_compact_pass(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Compact line shows total duration of all steps")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Compact line shows total duration of all steps",
+)
 def test_compact_duration(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Failing scenario shows full steps in compact mode")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Failing scenario shows full steps in compact mode",
+)
 def test_compact_fail_shows_steps(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Error scenario shows full steps in compact mode")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Error scenario shows full steps in compact mode",
+)
 def test_compact_error_shows_steps(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Skipped scenario renders as a single compact line")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Skipped scenario renders as a single compact line",
+)
 def test_compact_skip(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Xfailed scenario renders as a single compact line")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Xfailed scenario renders as a single compact line",
+)
 def test_compact_xfail(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Xpassed scenario renders as a single compact line")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Xpassed scenario renders as a single compact line",
+)
 def test_compact_xpass(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Passing scenario shows all steps in steps mode")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Passing scenario shows all steps in steps mode",
+)
 def test_steps_mode_pass(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Steps mode shows step keyword and name")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature", "Steps mode shows step keyword and name"
+)
 def test_steps_keyword_name(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Feature header renders in baby blue")
+
+@scenario("features/glaze_bdd_rendering.feature", "Feature header renders in baby blue")
 def test_feature_header_color(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Scenario header renders in steel blue")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature", "Scenario header renders in steel blue"
+)
 def test_scenario_header_color(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Feature header prints before first scenario")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Feature header prints before first scenario",
+)
 def test_feature_header_before_scenario(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Feature header does not repeat for same feature")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Feature header does not repeat for same feature",
+)
 def test_feature_header_no_repeat(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "New feature prints a blank line then a new header")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "New feature prints a blank line then a new header",
+)
 def test_new_feature_blank_line(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Passing step renders entirely in green")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature", "Passing step renders entirely in green"
+)
 def test_pass_step_green(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Failing step renders entirely in bright red")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Failing step renders entirely in bright red",
+)
 def test_fail_step_red(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Error step renders entirely in standard red")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Error step renders entirely in standard red",
+)
 def test_error_step_red(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Xfailed step renders entirely in bright red")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Xfailed step renders entirely in bright red",
+)
 def test_xfail_step_red(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Xpassed step renders entirely in yellow")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature", "Xpassed step renders entirely in yellow"
+)
 def test_xpass_step_yellow(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Compact PASS line entire line renders in green")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Compact PASS line entire line renders in green",
+)
 def test_compact_pass_green(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Compact FAIL scenario name renders in bright red")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Compact FAIL scenario name renders in bright red",
+)
 def test_compact_fail_red(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Compact SKIP line renders entirely in yellow")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Compact SKIP line renders entirely in yellow",
+)
 def test_compact_skip_yellow(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Compact XFAIL line renders entirely in bright red")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Compact XFAIL line renders entirely in bright red",
+)
 def test_compact_xfail_red(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Compact XPASS line renders entirely in yellow")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Compact XPASS line renders entirely in yellow",
+)
 def test_compact_xpass_yellow(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Xfail corrects last step from failed to xfailed")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Xfail corrects last step from failed to xfailed",
+)
 def test_xfail_correction(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Xpass corrects last step from passed to xpassed")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Xpass corrects last step from passed to xpassed",
+)
 def test_xpass_correction(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Missing step definition renders as ERROR with trimmed message")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Missing step definition renders as ERROR with trimmed message",
+)
 def test_missing_step(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Background label appears before first background step")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Background label appears before first background step",
+)
 def test_background_label(): ...
 
-@scenario("features/glaze_bdd_rendering.feature",
-          "Teardown error renders after passing scenario")
+
+@scenario(
+    "features/glaze_bdd_rendering.feature",
+    "Teardown error renders after passing scenario",
+)
 def test_teardown_error(): ...
 
 
 # ── Given steps ───────────────────────────────────────────────────────────────
 
-@given(parsers.re(r"a passing BDD scenario with (?P<n>\d+) steps?$"), target_fixture="bdd_steps")
+
+@given(
+    parsers.re(r"a passing BDD scenario with (?P<n>\d+) steps?$"),
+    target_fixture="bdd_steps",
+)
 def passing_scenario_n_steps(plugin, n):
     n = int(n)
-    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Guest completes a purchase")]
+    plugin.bdd.scenario_buf = [
+        c_bdd_scenario("    Scenario: Guest completes a purchase")
+    ]
     for i in range(n):
         plugin.bdd.scenario_buf.append(
             _make_bdd_step("Given", f"step {i}", "passed", 0.1)
@@ -178,10 +273,16 @@ def passing_scenario_n_steps(plugin, n):
     return plugin.bdd.scenario_buf
 
 
-@given(parsers.parse("a passing BDD scenario with {n:d} steps each taking {dur:f} seconds"),
-       target_fixture="bdd_steps")
+@given(
+    parsers.parse(
+        "a passing BDD scenario with {n:d} steps each taking {dur:f} seconds"
+    ),
+    target_fixture="bdd_steps",
+)
 def passing_scenario_n_steps_duration(plugin, n, dur):
-    plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Guest completes a purchase")]
+    plugin.bdd.scenario_buf = [
+        c_bdd_scenario("    Scenario: Guest completes a purchase")
+    ]
     for i in range(n):
         plugin.bdd.scenario_buf.append(
             _make_bdd_step("Given", f"step {i}", "passed", dur)
@@ -196,8 +297,9 @@ def scenario_last_step_fails(plugin):
     plugin._test_short_msg = "assert 95.0 == 90"
     plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Discount code")]
     plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin.bdd.scenario_buf.append(_make_bdd_step("Then", "step 2", "failed", 0.1,
-                                                    short_msg="assert 95.0 == 90"))
+    plugin.bdd.scenario_buf.append(
+        _make_bdd_step("Then", "step 2", "failed", 0.1, short_msg="assert 95.0 == 90")
+    )
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     return plugin.bdd.scenario_buf
 
@@ -208,17 +310,26 @@ def scenario_step_runtime_error(plugin):
     plugin._test_short_msg = "RuntimeError: service timed out"
     plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Inventory error")]
     plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin.bdd.scenario_buf.append(_make_bdd_step("When", "step 2", "error", 0.1,
-                                                    short_msg="RuntimeError: service timed out"))
+    plugin.bdd.scenario_buf.append(
+        _make_bdd_step(
+            "When", "step 2", "error", 0.1, short_msg="RuntimeError: service timed out"
+        )
+    )
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     return plugin.bdd.scenario_buf
 
 
 @given("a skipped BDD scenario", target_fixture="skip_result")
 def skipped_bdd_scenario(plugin):
-    plugin.bdd.scenario_names["tests/bdd/test_checkout.py::test_skip"] = "Feature not yet implemented"
-    return _make_result("test_skip", "skipped", "Skipped: feature flag not enabled in CI",
-                        file="tests/bdd/test_checkout.py")
+    plugin.bdd.scenario_names["tests/bdd/test_checkout.py::test_skip"] = (
+        "Feature not yet implemented"
+    )
+    return _make_result(
+        "test_skip",
+        "skipped",
+        "Skipped: feature flag not enabled in CI",
+        file="tests/bdd/test_checkout.py",
+    )
 
 
 @given("a BDD scenario where the last step is xfailed", target_fixture="bdd_steps")
@@ -227,8 +338,9 @@ def scenario_last_step_xfailed(plugin):
     plugin._test_short_msg = "xfailed: known bug"
     plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Known bug")]
     plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step 1", "passed", 0.1))
-    plugin.bdd.scenario_buf.append(_make_bdd_step("Then", "step 2", "failed", 0.1,
-                                                    short_msg="assert x"))
+    plugin.bdd.scenario_buf.append(
+        _make_bdd_step("Then", "step 2", "failed", 0.1, short_msg="assert x")
+    )
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     return plugin.bdd.scenario_buf
 
@@ -244,8 +356,10 @@ def scenario_last_step_xpassed(plugin):
     return plugin.bdd.scenario_buf
 
 
-@given(parsers.parse('a passing BDD scenario with a "{keyword}" step named "{name}"'),
-       target_fixture="bdd_steps")
+@given(
+    parsers.parse('a passing BDD scenario with a "{keyword}" step named "{name}"'),
+    target_fixture="bdd_steps",
+)
 def passing_scenario_named_step(plugin, keyword, name):
     plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Named step")]
     plugin.bdd.scenario_buf.append(_make_bdd_step(keyword, name, "passed", 0.1))
@@ -253,7 +367,10 @@ def passing_scenario_named_step(plugin, keyword, name):
     return plugin.bdd.scenario_buf
 
 
-@given(parsers.parse('a BDD scenario in feature "{feature_name}"'), target_fixture="bdd_scenario")
+@given(
+    parsers.parse('a BDD scenario in feature "{feature_name}"'),
+    target_fixture="bdd_scenario",
+)
 def scenario_in_feature(plugin, feature_name):
     plugin.bdd.scenario_buf = [
         c_bdd_feature(f"  Feature: {feature_name}"),
@@ -267,8 +384,10 @@ def scenario_in_feature(plugin, feature_name):
     return plugin.bdd.scenario_buf
 
 
-@given("two BDD scenarios in the same feature \"Shopping cart checkout\"",
-       target_fixture="bdd_scenario")
+@given(
+    'two BDD scenarios in the same feature "Shopping cart checkout"',
+    target_fixture="bdd_scenario",
+)
 def two_scenarios_same_feature(plugin):
     plugin.bdd.scenario_buf = [
         c_bdd_feature("  Feature: Shopping cart checkout"),
@@ -282,8 +401,10 @@ def two_scenarios_same_feature(plugin):
     return plugin.bdd.scenario_buf
 
 
-@given("another BDD scenario in feature \"User authentication\"",
-       target_fixture="second_scenario")
+@given(
+    'another BDD scenario in feature "User authentication"',
+    target_fixture="second_scenario",
+)
 def another_scenario_new_feature(plugin):
     return "User authentication"
 
@@ -293,13 +414,16 @@ def scenario_missing_step(plugin):
     raw_msg = 'StepDefinitionNotFoundError: Step definition is not found: When "a step". Line 18 in scenario "X" in the feature "/path/to/file.feature"'
     # Trim through the same logic as the formatter
     if "StepDefinitionNotFoundError" in raw_msg and ". " in raw_msg:
-        raw_msg = raw_msg[:raw_msg.index(". ") + 1]
+        raw_msg = raw_msg[: raw_msg.index(". ") + 1]
     plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Missing step")]
-    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "step defined", "passed", 0.1))
-    plugin.bdd.scenario_buf.append(_make_bdd_step(
-        "When", "a step that has no implementation", "error", 0.1,
-        short_msg=raw_msg
-    ))
+    plugin.bdd.scenario_buf.append(
+        _make_bdd_step("Given", "step defined", "passed", 0.1)
+    )
+    plugin.bdd.scenario_buf.append(
+        _make_bdd_step(
+            "When", "a step that has no implementation", "error", 0.1, short_msg=raw_msg
+        )
+    )
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     return plugin.bdd.scenario_buf
 
@@ -308,17 +432,23 @@ def scenario_missing_step(plugin):
 def scenario_with_background(plugin):
     plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Auth")]
     plugin.bdd.scenario_buf.append(f"       \033[{2}mBackground:\033[0m")
-    plugin.bdd.scenario_buf.append(_make_bdd_step("Given", "the database is available", "passed", 0.1))
+    plugin.bdd.scenario_buf.append(
+        _make_bdd_step("Given", "the database is available", "passed", 0.1)
+    )
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     return plugin.bdd.scenario_buf
 
 
-@given(parsers.parse("a passing BDD scenario with {n:d} steps for teardown"),
-       target_fixture="teardown_bdd_steps")
+@given(
+    parsers.parse("a passing BDD scenario with {n:d} steps for teardown"),
+    target_fixture="teardown_bdd_steps",
+)
 def passing_scenario_for_teardown(plugin, n):
     plugin.bdd.scenario_buf = [c_bdd_scenario("    Scenario: Teardown test")]
     for i in range(n):
-        plugin.bdd.scenario_buf.append(_make_bdd_step("Given", f"step {i}", "passed", 0.1))
+        plugin.bdd.scenario_buf.append(
+            _make_bdd_step("Given", f"step {i}", "passed", 0.1)
+        )
     plugin.bdd.last_step_idx = len(plugin.bdd.scenario_buf) - 1
     plugin.bdd.handled.add("tests/bdd/test_checkout.py::test_teardown")
     return plugin.bdd.scenario_buf
@@ -330,6 +460,7 @@ def teardown_error_msg(error):
 
 
 # ── When steps ────────────────────────────────────────────────────────────────
+
 
 @when("pytest-glaze flushes the scenario in compact mode", target_fixture="printed")
 def flush_compact(plugin):
@@ -404,6 +535,7 @@ def render_teardown(plugin, teardown_bdd_steps, teardown_error):
 
 # ── Then steps ────────────────────────────────────────────────────────────────
 
+
 @then("the output contains a PASS badge")
 def bdd_output_has_pass(printed):
     assert any("PASS" in strip_ansi(l) for l in printed)
@@ -420,8 +552,9 @@ def no_step_lines(printed):
     result_lines = [l for l in printed if "---" in strip_ansi(l)]
     for line in result_lines:
         plain = strip_ansi(line)
-        assert not any(f"  {kw} " in plain for kw in step_keywords), \
-            f"Step line found in compact output: {plain}"
+        assert not any(
+            f"  {kw} " in plain for kw in step_keywords
+        ), f"Step line found in compact output: {plain}"
 
 
 @then("the duration shown is the sum of all step durations")
@@ -434,8 +567,12 @@ def duration_is_sum(printed):
 
 @then("all step lines are printed")
 def all_step_lines_printed(printed):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])
+    ]
     assert len(step_lines) >= 1
 
 
@@ -466,15 +603,23 @@ def bdd_output_has_xpass(printed):
 
 @then(parsers.parse("exactly {n:d} step lines are printed"))
 def exactly_n_step_lines(printed, n):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["Given", "When", "Then", "And", "But"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["Given", "When", "Then", "And", "But"])
+    ]
     assert len(step_lines) == n
 
 
 @then("each step line has a PASS badge")
 def each_step_has_pass(printed):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["Given", "When", "Then", "And", "But"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["Given", "When", "Then", "And", "But"])
+    ]
     assert all("PASS" in strip_ansi(l) for l in step_lines)
 
 
@@ -502,11 +647,23 @@ def scenario_header_steel_blue(printed):
 
 @then(parsers.parse('the Feature header "{name}" appears before the scenario'))
 def feature_header_before_scenario(printed, name):
-    feature_idx = next((i for i, l in enumerate(printed) if name in strip_ansi(l)
-                        and "Feature:" in strip_ansi(l)), None)
+    feature_idx = next(
+        (
+            i
+            for i, l in enumerate(printed)
+            if name in strip_ansi(l) and "Feature:" in strip_ansi(l)
+        ),
+        None,
+    )
     # Scenario appears either as a header line or in a compact result line
-    scenario_idx = next((i for i, l in enumerate(printed) if "Scenario:" in strip_ansi(l)
-                         and i != feature_idx), None)
+    scenario_idx = next(
+        (
+            i
+            for i, l in enumerate(printed)
+            if "Scenario:" in strip_ansi(l) and i != feature_idx
+        ),
+        None,
+    )
     assert feature_idx is not None
     assert scenario_idx is not None
     assert feature_idx < scenario_idx
@@ -514,8 +671,9 @@ def feature_header_before_scenario(printed, name):
 
 @then(parsers.parse('"{name}" appears exactly once as a Feature header'))
 def feature_header_once(printed, name):
-    feature_lines = [l for l in printed if "Feature:" in strip_ansi(l)
-                     and name in strip_ansi(l)]
+    feature_lines = [
+        l for l in printed if "Feature:" in strip_ansi(l) and name in strip_ansi(l)
+    ]
     assert len(feature_lines) == 1
 
 
@@ -525,15 +683,23 @@ def blank_before_new_feature(printed, name):
         if "Feature:" in strip_ansi(l) and name in strip_ansi(l):
             # In compact mode blank line may be suppressed — just verify header exists
             # and appears after first scenario
-            assert i > 0, f"Feature header '{name}' is first line — expected after first scenario"
+            assert (
+                i > 0
+            ), f"Feature header '{name}' is first line — expected after first scenario"
             return
-    pytest.fail(f"Feature header '{name}' not found in: {[strip_ansi(l) for l in printed]}")
+    pytest.fail(
+        f"Feature header '{name}' not found in: {[strip_ansi(l) for l in printed]}"
+    )
 
 
 @then("the step line is entirely green")
 def step_line_entirely_green(printed):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])
+    ]
     assert step_lines
     assert all(GREEN in l for l in step_lines)
 
@@ -557,15 +723,21 @@ def step_name_green(printed):
 
 @then("the step line is entirely bright red")
 def step_line_entirely_bright_red(printed):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["Given", "When", "Then", "XFAIL"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["Given", "When", "Then", "XFAIL"])
+    ]
     assert step_lines
     assert any(BRIGHT_RED in l for l in step_lines)
 
 
 @then('the failing step "---" prefix is bright red')
 def failing_step_dash_bright_red(printed):
-    fail_lines = [l for l in printed if "FAIL" in strip_ansi(l) and "---" in strip_ansi(l)]
+    fail_lines = [
+        l for l in printed if "FAIL" in strip_ansi(l) and "---" in strip_ansi(l)
+    ]
     assert any(BRIGHT_RED in l for l in fail_lines)
 
 
@@ -582,15 +754,21 @@ def step_name_bright_red(printed):
 
 @then("the step line is entirely standard red")
 def step_line_entirely_standard_red(printed):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["When", "ERROR"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["When", "ERROR"])
+    ]
     assert step_lines
     assert any(STANDARD_RED in l for l in step_lines)
 
 
 @then('the error step "---" prefix is standard red')
 def error_step_dash_standard_red(printed):
-    error_lines = [l for l in printed if "ERROR" in strip_ansi(l) and "---" in strip_ansi(l)]
+    error_lines = [
+        l for l in printed if "ERROR" in strip_ansi(l) and "---" in strip_ansi(l)
+    ]
     assert any(STANDARD_RED in l for l in error_lines)
 
 
@@ -623,15 +801,18 @@ def xpass_badge_yellow(printed):
 
 @then("the entire compact result line is green")
 def compact_line_green(printed):
-    result_lines = [l for l in printed if "---" in strip_ansi(l)
-                    and "Scenario:" in strip_ansi(l)]
+    result_lines = [
+        l for l in printed if "---" in strip_ansi(l) and "Scenario:" in strip_ansi(l)
+    ]
     assert result_lines
     assert any(GREEN in l for l in result_lines)
 
 
 @then("the scenario name on the FAIL line is bright red")
 def compact_fail_name_bright_red(printed):
-    fail_lines = [l for l in printed if "FAIL" in strip_ansi(l) and "---" in strip_ansi(l)]
+    fail_lines = [
+        l for l in printed if "FAIL" in strip_ansi(l) and "---" in strip_ansi(l)
+    ]
     assert fail_lines
     assert any(BRIGHT_RED in l for l in fail_lines)
 
@@ -650,22 +831,32 @@ def compact_line_bright_red(printed):
 
 @then("the last step has an XFAIL badge")
 def last_step_xfail(printed):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])
+    ]
     assert step_lines
     assert "XFAIL" in strip_ansi(step_lines[-1])
 
 
 @then("the xfail reason appears on the E line")
 def xfail_reason_on_e_line(printed):
-    e_lines = [strip_ansi(l) for l in printed if strip_ansi(l).strip().startswith("E  ")]
+    e_lines = [
+        strip_ansi(l) for l in printed if strip_ansi(l).strip().startswith("E  ")
+    ]
     assert any("xfailed" in l for l in e_lines)
 
 
 @then("the last step has an XPASS badge")
 def last_step_xpass(printed):
-    step_lines = [l for l in printed if "---" in strip_ansi(l) and
-                  any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])]
+    step_lines = [
+        l
+        for l in printed
+        if "---" in strip_ansi(l)
+        and any(kw in strip_ansi(l) for kw in ["Given", "When", "Then"])
+    ]
     assert step_lines
     assert "XPASS" in strip_ansi(step_lines[-1])
 
@@ -677,11 +868,16 @@ def step_has_error(printed):
 
 @then("the error message is trimmed to the first sentence")
 def error_trimmed(printed):
-    e_lines = [strip_ansi(l) for l in printed if strip_ansi(l).strip().startswith("E  ")]
+    e_lines = [
+        strip_ansi(l) for l in printed if strip_ansi(l).strip().startswith("E  ")
+    ]
     assert e_lines
-    assert not any("/path/to" in l for l in e_lines), "Full path found — message not trimmed"
-    assert not any("Line 18 in scenario" in l for l in e_lines), \
-        "Verbose suffix found — message not trimmed"
+    assert not any(
+        "/path/to" in l for l in e_lines
+    ), "Full path found — message not trimmed"
+    assert not any(
+        "Line 18 in scenario" in l for l in e_lines
+    ), "Verbose suffix found — message not trimmed"
 
 
 @then(parsers.parse('a dim "Background:" label appears before the background step'))

@@ -11,12 +11,13 @@ Covers:
   1.  Rule block
   2.  Multiple example tables with tags
 """
+
 from __future__ import annotations
 
 from pytest_bdd import given, parsers, scenario, step, then, when
 
-
 # ── Scenario 3: Docstring ─────────────────────────────────────────────────────
+
 
 @scenario("features/advanced.feature", "Email body is validated")
 def test_email_body() -> None: ...
@@ -38,6 +39,7 @@ def recipient_receives(email_body: str) -> None:
 
 
 # ── Scenario 4: Datatable ─────────────────────────────────────────────────────
+
 
 @scenario("features/advanced.feature", "Shopping cart contains multiple items")
 def test_cart_datatable() -> None: ...
@@ -63,6 +65,7 @@ def assert_total(cart_total: float) -> None:
 
 # ── Scenario 6: Unicode ───────────────────────────────────────────────────────
 
+
 @scenario("features/advanced.feature", "Überprüfung der Bestellung")
 def test_unicode_scenario() -> None: ...
 
@@ -83,6 +86,7 @@ def assert_order_status(order: dict) -> None:
 
 
 # ── Scenario 7: Tagged scenarios ──────────────────────────────────────────────
+
 
 @scenario("features/advanced.feature", "Quick health check")
 def test_smoke_health_check() -> None: ...
@@ -124,6 +128,7 @@ def systems_updated(pipeline_order: dict) -> None:
 
 # ── Scenario 8: Large assertion diff (intentional FAIL) ───────────────────────
 
+
 @scenario("features/advanced.feature", "Order summary matches expected")
 def test_large_diff() -> None: ...
 
@@ -133,10 +138,10 @@ def order_with_many_items() -> dict:
     return {
         "id": "ORD-001",
         "items": [
-            {"name": "Apple",  "qty": 3, "price": 0.50},
-            {"name": "Bread",  "qty": 1, "price": 1.20},
-            {"name": "Milk",   "qty": 2, "price": 0.90},
-            {"name": "Eggs",   "qty": 12, "price": 0.10},
+            {"name": "Apple", "qty": 3, "price": 0.50},
+            {"name": "Bread", "qty": 1, "price": 1.20},
+            {"name": "Milk", "qty": 2, "price": 0.90},
+            {"name": "Eggs", "qty": 12, "price": 0.10},
             {"name": "Butter", "qty": 1, "price": 2.50},
         ],
         "total": 7.90,
@@ -156,20 +161,21 @@ def assert_summary(summary: dict) -> None:
     expected = {
         "id": "ORD-001",
         "items": [
-            {"name": "Apple",  "qty": 3, "price": 0.50},
-            {"name": "Bread",  "qty": 1, "price": 1.20},
-            {"name": "Milk",   "qty": 2, "price": 0.90},
-            {"name": "Eggs",   "qty": 12, "price": 0.10},
+            {"name": "Apple", "qty": 3, "price": 0.50},
+            {"name": "Bread", "qty": 1, "price": 1.20},
+            {"name": "Milk", "qty": 2, "price": 0.90},
+            {"name": "Eggs", "qty": 12, "price": 0.10},
             {"name": "Butter", "qty": 1, "price": 2.50},
         ],
-        "total": 8.50,   # wrong — intentional
-        "discount": 0.5, # wrong — intentional
+        "total": 8.50,  # wrong — intentional
+        "discount": 0.5,  # wrong — intentional
         "tax": 0.79,
     }
     assert summary == expected
 
 
 # ── Rule block ────────────────────────────────────────────────────────────────
+
 
 @scenario("features/advanced.feature", "Guest cannot access order history")
 def test_guest_no_order_history() -> None: ...
@@ -191,6 +197,7 @@ def access_denied(guest: dict) -> None:
 
 
 # ── Multiple example tables ───────────────────────────────────────────────────
+
 
 @scenario("features/advanced.feature", "Discount tiers")
 def test_discount_tiers() -> None: ...
@@ -214,15 +221,15 @@ def assert_final_price(discounted: int, final: str) -> None:
 
 # ── Long step names ───────────────────────────────────────────────────────────
 
-@scenario("features/advanced.feature",
-          "Very descriptive scenario with long step names")
+
+@scenario("features/advanced.feature", "Very descriptive scenario with long step names")
 def test_long_step_names() -> None: ...
 
 
 @given(
     "the user has successfully authenticated using their corporate "
     "single sign-on credentials",
-    target_fixture="auth_session"
+    target_fixture="auth_session",
 )
 def sso_authenticated() -> dict:
     return {"authenticated": True, "method": "sso"}
@@ -231,7 +238,7 @@ def sso_authenticated() -> dict:
 @when(
     "the user submits a request to retrieve all historical transaction "
     "records from the past 12 months",
-    target_fixture="transaction_records"
+    target_fixture="transaction_records",
 )
 def fetch_transactions(auth_session: dict) -> list:
     return [{"id": f"TXN-{i}", "amount": i * 10} for i in range(1, 6)]
@@ -245,7 +252,9 @@ def assert_paginated_response(transaction_records: list) -> None:
     assert len(transaction_records) == 5
     assert all("id" in r and "amount" in r for r in transaction_records)
 
+
 # ── Wildcard * keyword ────────────────────────────────────────────────────────
+
 
 @scenario("features/advanced.feature", "Wildcard keyword steps")
 def test_wildcard_keyword() -> None: ...
@@ -268,6 +277,7 @@ def wildcard_response_success(system_state: dict) -> None:
 
 # ── Generic @step decorator ───────────────────────────────────────────────────
 
+
 @scenario("features/advanced.feature", "Generic step decorator")
 def test_generic_step_decorator() -> None: ...
 
@@ -289,12 +299,14 @@ def wishlist_contains(product: dict) -> None:
 
 # ── Vertical example table ────────────────────────────────────────────────────
 
+
 @scenario("features/advanced.feature", "Shipping cost by region")
 def test_shipping_vertical() -> None: ...
 
 
-@given(parsers.parse("the order is shipping to {region}"),
-       target_fixture="shipping_region")
+@given(
+    parsers.parse("the order is shipping to {region}"), target_fixture="shipping_region"
+)
 def shipping_region(region: str) -> str:
     return region
 
@@ -308,4 +320,3 @@ def calculate_shipping(shipping_region: str) -> int:
 @then(parsers.parse("the cost is {cost}"))
 def assert_shipping_cost(shipping_cost: int, cost: str) -> None:
     assert shipping_cost == int(cost)
-

@@ -4,6 +4,7 @@ pytest_glaze/_colors.py — ANSI color helpers and outcome tables.
 No dependencies on other pytest_glaze modules — safe to import from anywhere.
 Change the escape codes here to retheme everything.
 """
+
 from __future__ import annotations
 
 import os
@@ -14,25 +15,27 @@ _NO_COLOR = not sys.stdout.isatty() or bool(os.environ.get("NO_COLOR"))
 
 # ── ANSI palette ──────────────────────────────────────────────────────────────
 
-_SOFT_PEACH      = "0;38;2;252;205;174"   # 24-bit peach — c_emsg / context lines
-_BRIGHT_GREEN  = "92"
-_BRIGHT_RED    = "91"
+_SOFT_PEACH = "0;38;2;252;205;174"  # 24-bit peach — c_emsg / context lines
+_BRIGHT_GREEN = "92"
+_BRIGHT_RED = "91"
 _BRIGHT_YELLOW = "93"
-_STANDARD_RED  = "31"
-_GRAY          = "90"
-_DIM           = "2"
-_BOLD          = "1"
-_BABY_BLUE     = "0;38;2;220;248;255"   # near-white bright blue — Feature
-_STEEL_BLUE    = "0;38;2;170;225;255"   # sky blue — Scenario
+_STANDARD_RED = "31"
+_GRAY = "90"
+_DIM = "2"
+_BOLD = "1"
+_BABY_BLUE = "0;38;2;220;248;255"  # near-white bright blue — Feature
+_STEEL_BLUE = "0;38;2;170;225;255"  # sky blue — Scenario
 
 
 # ── Escape helper ─────────────────────────────────────────────────────────────
+
 
 def _esc(code: str, text: str) -> str:
     return text if _NO_COLOR else f"\033[{code}m{text}\033[0m"
 
 
 # ── Color functions ───────────────────────────────────────────────────────────
+
 
 def c_pass(t: str) -> str:
     """Bright green — passing tests / expected values."""
@@ -99,27 +102,27 @@ def c_bdd_scenario(t: str) -> str:
 _OUTCOME_ORDER = ("passed", "failed", "error", "skipped", "xfailed", "xpassed")
 
 _BADGE: Dict[str, str] = {
-    "passed":  c_pass("PASS"),
-    "failed":  c_fail("FAIL"),
-    "error":   c_error("ERROR"),
+    "passed": c_pass("PASS"),
+    "failed": c_fail("FAIL"),
+    "error": c_error("ERROR"),
     "skipped": c_skip("SKIP"),
     "xfailed": c_xfail("XFAIL"),
     "xpassed": c_xpass("XPASS"),
 }
 
 _OUTCOME_COLOR: Dict[str, Callable[[str], str]] = {
-    "passed":  c_pass,
-    "failed":  c_fail,
-    "error":   c_error,
+    "passed": c_pass,
+    "failed": c_fail,
+    "error": c_error,
     "skipped": c_skip,
     "xfailed": c_xfail,
     "xpassed": c_xpass,
 }
 
 _SUMMARY_FMT: Dict[str, Callable[[int], str]] = {
-    "passed":  lambda n: c_pass(f"{n} passed"),
-    "failed":  lambda n: c_fail(f"{n} failed"),
-    "error":   lambda n: c_error(f"{n} error" if n == 1 else f"{n} errors"),
+    "passed": lambda n: c_pass(f"{n} passed"),
+    "failed": lambda n: c_fail(f"{n} failed"),
+    "error": lambda n: c_error(f"{n} error" if n == 1 else f"{n} errors"),
     "skipped": lambda n: c_skip(f"{n} skipped"),
     "xfailed": lambda n: c_xfail(f"{n} xfailed"),
     "xpassed": lambda n: c_xpass(f"{n} xpassed"),
@@ -128,8 +131,20 @@ _SUMMARY_FMT: Dict[str, Callable[[int], str]] = {
 __all__ = [
     "_NO_COLOR",
     "_esc",
-    "c_pass", "c_fail", "c_error", "c_skip", "c_xfail", "c_xpass",
-    "c_emsg", "c_section", "c_dim", "c_bold",
-    "c_bdd_feature", "c_bdd_scenario",
-    "_OUTCOME_ORDER", "_BADGE", "_OUTCOME_COLOR", "_SUMMARY_FMT",
+    "c_pass",
+    "c_fail",
+    "c_error",
+    "c_skip",
+    "c_xfail",
+    "c_xpass",
+    "c_emsg",
+    "c_section",
+    "c_dim",
+    "c_bold",
+    "c_bdd_feature",
+    "c_bdd_scenario",
+    "_OUTCOME_ORDER",
+    "_BADGE",
+    "_OUTCOME_COLOR",
+    "_SUMMARY_FMT",
 ]

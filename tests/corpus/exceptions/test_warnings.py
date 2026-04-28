@@ -7,11 +7,13 @@ Covers pytest.warns and warnings surfacing:
   (warnings emitted outside pytest.warns — appear in pytest's warning summary,
   not in per-test E-lines).
 """
+
 import warnings
+
 import pytest
 
-
 # ── pytest.warns — passing cases ──────────────────────────────────────────────
+
 
 def test_warns_pass():
     """Correct category issued — test passes."""
@@ -40,10 +42,11 @@ def test_warns_pass_multiple():
 
 # ── pytest.warns — failing cases ──────────────────────────────────────────────
 
+
 def test_warns_fail_no_warning():
     """No warning raised at all — 'DID NOT WARN' failure shape."""
     with pytest.warns(UserWarning):
-        _ = 1 + 1   # no warning emitted
+        _ = 1 + 1  # no warning emitted
 
 
 def test_warns_fail_wrong_category():
@@ -67,6 +70,7 @@ def test_warns_fail_future_warning():
 
 # ── recwarn fixture ───────────────────────────────────────────────────────────
 
+
 def test_recwarn_pass(recwarn):
     """recwarn collects all warnings without requiring a specific category."""
     warnings.warn("any warning", UserWarning)
@@ -78,18 +82,19 @@ def test_recwarn_pass(recwarn):
 def test_recwarn_fail_count(recwarn):
     """recwarn assertion on count — exercises int equality failure shape."""
     warnings.warn("one warning", UserWarning)
-    assert len(recwarn) == 2   # only 1 was issued
+    assert len(recwarn) == 2  # only 1 was issued
 
 
 def test_recwarn_fail_category(recwarn):
     """recwarn assertion on category — exercises identity failure shape."""
     warnings.warn("a deprecation", DeprecationWarning)
-    assert recwarn[0].category is UserWarning   # wrong: it's DeprecationWarning
+    assert recwarn[0].category is UserWarning  # wrong: it's DeprecationWarning
 
 
 # ── Unhandled warnings (outside pytest.warns) ─────────────────────────────────
 # These appear in pytest's warning summary section, NOT in per-test E-lines.
 # Verifies the formatter doesn't inject spurious section content for them.
+
 
 def test_unhandled_warning_pass():
     """Warning emitted without pytest.warns on a passing test.

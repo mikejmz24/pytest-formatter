@@ -2,7 +2,9 @@
 """
 Shared fixtures for the formatter validation corpus.
 """
+
 import time
+
 import pytest
 
 

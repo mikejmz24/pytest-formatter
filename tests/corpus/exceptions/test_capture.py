@@ -12,6 +12,7 @@ interface which the formatter stub does not implement.
 Every failing test here must produce at least
 one visible section in the output.
 """
+
 import logging
 import sys
 
@@ -19,6 +20,7 @@ log = logging.getLogger(__name__)
 
 
 # ── Output captured silently (test passes) ────────────────────────────────────
+
 
 def test_pass_with_stdout():
     """Captured stdout on a passing test — formatter must not show sections."""
@@ -33,6 +35,7 @@ def test_pass_with_logging():
 
 
 # ── Stdout ────────────────────────────────────────────────────────────────────
+
 
 def test_fail_with_stdout():
     """Single print — exercises the ──Captured stdout call── section."""
@@ -56,6 +59,7 @@ def test_fail_with_long_stdout():
 
 # ── Stderr ────────────────────────────────────────────────────────────────────
 
+
 def test_fail_with_stderr():
     """Stderr output — exercises the ──Captured stderr call── section."""
     print("error output attached to this failure", file=sys.stderr)
@@ -63,6 +67,7 @@ def test_fail_with_stderr():
 
 
 # ── Combined stdout + stderr ──────────────────────────────────────────────────
+
 
 def test_fail_with_stdout_and_stderr():
     """Both stdout and stderr in one failing test — verifies that the formatter
@@ -73,6 +78,7 @@ def test_fail_with_stdout_and_stderr():
 
 
 # ── Logging ───────────────────────────────────────────────────────────────────
+
 
 def test_fail_with_logging():
     """Multiple log levels — exercises the ──Captured log call── section.
@@ -85,6 +91,7 @@ def test_fail_with_logging():
 
 
 # ── capsys ────────────────────────────────────────────────────────────────────
+
 
 def test_capsys_pass(capsys):
     """capsys readouterr — passing case; formatter shows no section."""
@@ -102,6 +109,7 @@ def test_capsys_fail(capsys):
 
 
 # ── caplog ────────────────────────────────────────────────────────────────────
+
 
 def test_caplog_pass(caplog):
     """caplog — passing case; confirms structured log capture works."""
