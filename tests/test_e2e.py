@@ -115,3 +115,52 @@ def test_ansi_injection_in_test_name_does_not_corrupt_output(pytester):
     # Output must contain readable content — not garbled by control sequences
     assert "PASS" in result.stdout.str()
     assert "Total:" in result.stdout.str()
+
+# ── BDD session cases ─────────────────────────────────────────────────────────
+
+def test_bdd_compact_mode_default(pytester):
+    """BDD scenarios collapse to single line in compact mode by default."""
+    pytester.makepyfile("""
+        from pytest_bdd import scenario, given, when, then
+        
+        @scenario("test.feature", "Guest completes a purchase")
+        def test_guest_purchase(): ...
+        
+        @given("the cart contains 2 items", target_fixture="cart")
+        def cart(): return {"items": 2}
+        
+        @when("the guest submits payment")
+        def submit(cart): pass
+        
+        @then("the order is confirmed")
+        def confirmed(cart): pass
+    """)
+    pytester.makefile(".feature", test="""
+        Feature: Shopping cart
+          Scenario: Guest completes a purchase
+            Given the cart contains 2 items
+            When the guest submits payment
+            Then the order is confirmed
+    """)
+    result = pytester.runpytest("--glaze", "-p", "no:terminal")
+    result.stdout.fnmatch_lines(["*PASS*Scenario: Guest completes a purchase*"])
+
+
+def test_teardown_error_shows_after_pass(pytester):
+    """Teardown errors must appear after the passing test line."""
+    pytester.makepyfile("""
+        import pytest
+        @pytest.fixture
+        def broken_teardown():
+            yield
+            raise RuntimeError("teardown exploded")
+        def test_pass(broken_teardown):
+            assert True
+    """)
+    result = pytester.runpytest("--glaze", "-p", "no:terminal")
+    output = result.stdout.str()
+    pass_pos = output.find("PASS")
+    error_pos = output.find("ERROR")
+    assert pass_pos != -1
+    assert error_pos != -1
+    assert pass_pos < error_pos
