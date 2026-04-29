@@ -230,3 +230,219 @@ def test_no_color_env_strips_ansi_from_summary_line(pytester, monkeypatch):
     assert "Total:" in output
     assert "passed" in output
     assert _ESC not in output, f"ANSI escape leaked under NO_COLOR: {output!r}"
+
+
+# ── BDD session tests ─────────────────────────────────────────────────────────
+#
+# Design notes for future maintainers:
+#
+# WHY pytester.makepyfile() / pytester.makefile():
+#   These are the official pytest-recommended approach for plugin integration
+#   tests. Each call creates a real file inside a unique tmp_path directory
+#   that pytest manages per-test. Files are deleted automatically at session
+#   end (pass or fail). The alternative — committing real test files to disk —
+#   couples tests to filesystem layout and obscures intent.
+#
+# WHY runpytest() not runpytest_subprocess():
+#   runpytest() runs in the same process (faster, ~5ms vs ~50ms per call).
+#   runpytest_subprocess() spawns a fresh interpreter — required only when
+#   module-level state must be isolated (e.g. _NO_COLOR is computed at import
+#   time, so the no-color tests above need subprocess mode). BDD tests have
+#   no such constraint, so in-process is correct here.
+#
+# IDEMPOTENCY:
+#   Each pytester test gets its own isolated tmp directory — no shared state
+#   between tests. Safe to run in any order, any number of times, or in
+#   parallel via pytest-xdist.
+#
+# EXIT CODE ASSERTIONS (result.ret):
+#   Always assert result.ret alongside output content. A silent crash in a
+#   hook can produce unexpected output that accidentally satisfies a string
+#   assertion. result.ret == 0 means all tests passed, result.ret == 1 means
+#   at least one test failed. This makes assertions honest.
+#
+# PERFORMANCE NOTE:
+#   makefile(".feature", ...) involves real disk I/O — negligible now but
+#   worth knowing if the BDD e2e suite grows to hundreds of tests. At that
+#   point, batch multiple scenarios into fewer feature files to reduce
+#   per-test overhead.
+#
+# MAINTAINABILITY CONVENTIONS:
+#   1. One assertion per concern — if you can't name the test after a single
+#      behavior, split it into multiple tests.
+#   2. If feature file content is shared across multiple tests, extract it
+#      to a module-level constant rather than duplicating inline strings.
+#   3. Keep step definitions minimal — only the steps the scenario needs.
+#      Avoid fixture reuse across BDD e2e tests; self-contained is clearer.
+
+
+def test_bdd_steps_flag_shows_individual_step_lines(pytester):
+    """--bdd-steps must render a Given/When/Then line for each passing step.
+
+    Verifies that the --bdd-steps flag activates full step-by-step rendering
+    instead of the default compact (one line per scenario) mode. Each step
+    keyword (Given/When/Then) must appear in the output, confirming that
+    _bdd_flush_scenario() correctly entered steps_mode=True.
+
+    Exit code must be 0 — if the formatter crashes during step rendering,
+    result.ret would be non-zero and the test would catch the silent failure
+    even if "PASS" happened to appear in a traceback.
+    """
+    # Feature file is created as checkout.feature in the pytester tmp dir.
+    # pytest-bdd's @scenario locates it relative to the test file's directory.
+    # If you need this scenario in multiple e2e tests, extract the string to
+    # a module-level _CHECKOUT_FEATURE constant instead of duplicating it.
+    pytester.makefile(
+        ".feature",
+        checkout="""
+Feature: Shopping cart checkout
+  Scenario: Guest completes a purchase
+    Given a guest user
+    When they add an item to the cart
+    Then the order is confirmed
+""",
+    )
+    pytester.makepyfile("""
+        from pytest_bdd import scenario, given, when, then
+
+        @scenario("checkout.feature", "Guest completes a purchase")
+        def test_guest_purchase():
+            pass
+
+        @given("a guest user")
+        def guest_user():
+            pass
+
+        @when("they add an item to the cart")
+        def add_item():
+            pass
+
+        @then("the order is confirmed")
+        def order_confirmed():
+            pass
+    """)
+    result = pytester.runpytest("--glaze", "-p", "no:terminal", "--bdd-steps")
+    output = result.stdout.str()
+
+    # Verify full step-by-step rendering — each keyword must appear.
+    assert "Given" in output
+    assert "When" in output
+    assert "Then" in output
+    assert "PASS" in output
+
+    # Exit code 0 = all tests passed. Guards against silent hook crashes
+    # that might still produce "PASS" in a traceback or error message.
+    assert result.ret == 0, f"Expected clean exit, got ret={result.ret}:\n{output}"
+
+
+def test_bdd_missing_step_definition_shows_error_badge(pytester):
+    """A step with no matching definition must surface as ERROR with trimmed message.
+
+    Verifies that _bdd_step_func_lookup_error() correctly captures the
+    StepDefinitionNotFoundError, trims it to the first sentence via
+    extract_exception_msg(), and renders an ERROR badge with the step text
+    visible in the output.
+
+    The 'Then the order is confirmed' step is intentionally left without a
+    definition — this is the failure condition under test, not a mistake.
+
+    Exit code must be 1 (test failed). If the formatter silently swallows
+    the error and exits 0, result.ret catches it even if "ERROR" appears
+    elsewhere in the output.
+    """
+    pytester.makefile(
+        ".feature",
+        checkout="""
+Feature: Shopping cart checkout
+  Scenario: Guest completes a purchase
+    Given a guest user
+    When they add an item to the cart
+    Then the order is confirmed
+""",
+    )
+    pytester.makepyfile("""
+        from pytest_bdd import scenario, given, when
+
+        @scenario("checkout.feature", "Guest completes a purchase")
+        def test_guest_purchase():
+            pass
+
+        @given("a guest user")
+        def guest_user():
+            pass
+
+        @when("they add an item to the cart")
+        def add_item():
+            pass
+
+        # "Then the order is confirmed" has no step definition — intentional.
+        # This triggers pytest_bdd_step_func_lookup_error in the formatter,
+        # which must render an ERROR badge with the step text trimmed to the
+        # first sentence of StepDefinitionNotFoundError.
+    """)
+    result = pytester.runpytest("--glaze", "-p", "no:terminal")
+    output = result.stdout.str()
+
+    # ERROR badge must appear — confirms the hook fired and rendered correctly.
+    assert "ERROR" in output
+
+    # Step text must appear in the trimmed error message — confirms
+    # extract_exception_msg() surfaced the right content and didn't swallow it.
+    assert "the order is confirmed" in output
+
+    # Exit code 1 = at least one test failed, as expected.
+    assert result.ret == 1, f"Expected failed exit, got ret={result.ret}:\n{output}"
+
+
+def test_osc_hyperlink_in_assertion_does_not_corrupt_output(pytester):
+    """OSC hyperlink escape sequences in assertion messages must be sanitized.
+
+    OSC (Operating System Command) sequences take the form:
+        ESC ]8;; <url> ESC \\ <text> ESC ]8;; ESC \\
+    Modern terminals render these as clickable hyperlinks. If they reach
+    stdout unsanitized they corrupt the terminal display and can break
+    downstream log parsers.
+
+    This test verifies that LineColorizer.sanitize() strips OSC sequences
+    before rendering, so the link text ('click here') survives but the
+    escape bytes do not.
+
+    Uses a raw string r\"\"\"...\"\"\" so that \\x1b becomes a real ESC byte
+    in the generated test file when Python parses it in the child process.
+    This is intentional — do not change to a regular string, which would
+    leave \\x1b as a literal backslash-x sequence and miss the real sanitization path.
+
+    SECURITY NOTE:
+    If you extend this test to cover truly hostile payloads (shell injection,
+    path traversal), ensure assertions verify sanitization rather than just
+    absence of a crash — a silent swallow is as dangerous as a pass-through.
+
+    Exit code must be 1 (assertion failed in the generated test), confirming
+    the formatter rendered the failure path rather than erroring out silently.
+    """
+    # r-string: \x1b becomes ESC byte in the child process's generated file.
+    pytester.makepyfile(r"""
+        def test_osc_in_message():
+            # OSC hyperlink sequence: ESC ]8;; url ESC \ text ESC ]8;; ESC \
+            # A hostile terminal or log injector could embed these in any
+            # string that ends up in an assertion message or exception text.
+            osc_link = "\x1b]8;;https://example.com\x1b\\click here\x1b]8;;\x1b\\"
+            assert osc_link == "plain text", f"got: {osc_link}"
+    """)
+    result = pytester.runpytest("--glaze", "-p", "no:terminal")
+    output = result.stdout.str()
+
+    # Failure must be rendered — confirms the formatter reached the sanitization path.
+    assert "FAIL" in output
+
+    # OSC sequence must not appear in output — the ESC ]8; prefix is the
+    # universal marker for OSC hyperlinks. If any byte of this leaks through,
+    # sanitize() missed the OSC pattern.
+    assert "\x1b]8;" not in output, (
+        f"OSC hyperlink sequence leaked into formatter output.\n"
+        f"This means LineColorizer.sanitize() is not stripping OSC sequences.\n"
+        f"Output repr: {output!r}"
+    )
+
+    # Exit code 1 = assertion failed in the generated test, as expected.
+    assert result.ret == 1, f"Expected failed exit, got ret={result.ret}:\n{output}"

@@ -392,4 +392,10 @@ class LineColorizer:
         Prevents malicious test names from injecting terminal control sequences
         into the formatter output.
         """
-        return re.sub(r"\033\[[\d;]*[a-zA-Z]", "", text)
+        return re.sub(
+            r"\033\[[\d;]*[a-zA-Z]"  # CSI: \033[ ... letter  (colors, bold, dim)
+            r"|\033\][^\033\007]*"  # OSC start: \033] ... (hyperlinks, title sets)
+            r"(?:\033\\|\007)",  # OSC terminator: ST (\033\) or BEL (\007)
+            "",
+            text,
+        )
