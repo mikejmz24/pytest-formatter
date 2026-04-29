@@ -18,12 +18,10 @@ Coverage:
 import time
 from types import SimpleNamespace
 
-import pytest_glaze
-from pytest_glaze._types import MAX_E_LINES
 from pytest_glaze import FormatterPlugin
-from pytest_glaze._types import _BDDStep
 from pytest_glaze._colors import c_bdd_scenario
 from pytest_glaze._hooks import register_plugin
+from pytest_glaze._types import MAX_E_LINES, ScenarioMeta, _BDDStep
 from tests.helpers import _make_result, strip_ansi
 
 # ── Stubs ─────────────────────────────────────────────────────────────────────
@@ -557,7 +555,9 @@ class TestBddScenarioNameIndexing:
         _ = p.flush_scenario("passed", None)
         p.pytest_collection_finish(session)
         assert (
-            p.bdd.scenario_names["tests/bdd/test_checkout.py::test_guest_purchase"]
+            p.bdd.scenario_meta[
+                "tests/bdd/test_checkout.py::test_guest_purchase"
+            ].scenario_name
             == "Guest completes a purchase"
         )
 
@@ -573,9 +573,9 @@ class TestBddScenarioNameIndexing:
         p.flush_scenario("passed", None)
         p.pytest_collection_finish(session)
         assert (
-            p.bdd.scenario_names[
+            p.bdd.scenario_meta[
                 "tests/bdd/test_checkout.py::test_unimplemented_feature"
-            ]
+            ].scenario_name
             == "Feature not yet implemented"
         )
 
@@ -590,7 +590,7 @@ class TestBddScenarioNameIndexing:
         session = SimpleNamespace(items=[item])
         p.flush_scenario("passed", None)
         p.pytest_collection_finish(session)
-        assert "tests/test_parsers.py::test_something" not in p.bdd.scenario_names
+        assert "tests/test_parsers.py::test_something" not in p.bdd.scenario_meta
 
     def test_doc_without_colon_separator_not_indexed(self):
         """__doc__ that doesn't match 'file: Scenario name' format must be ignored."""
@@ -603,7 +603,7 @@ class TestBddScenarioNameIndexing:
         session = SimpleNamespace(items=[item])
         p.flush_scenario("passed", None)
         p.pytest_collection_finish(session)
-        assert "tests/bdd/test_checkout.py::test_something" not in p.bdd.scenario_names
+        assert "tests/bdd/test_checkout.py::test_something" not in p.bdd.scenario_meta
 
 
 # Add to test_bdd_plugin.py
@@ -614,9 +614,9 @@ class TestBddSkipRendering:
 
     def test_skip_shows_scenario_name_not_function_name(self):
         p = _plugin()
-        p.bdd.scenario_names[
+        p.bdd.scenario_meta[
             "tests/bdd/test_checkout.py::test_unimplemented_feature"
-        ] = "Feature not yet implemented"
+        ] = ScenarioMeta(scenario_name="Feature not yet implemented")
         printed = p.flush_scenario("passed", None)
         r = _make_result(
             "test_unimplemented_feature",
@@ -631,7 +631,9 @@ class TestBddSkipRendering:
 
     def test_skip_indented_as_scenario(self):
         p = _plugin()
-        p.bdd.scenario_names["tests/bdd/test_checkout.py::test_skip"] = "My Scenario"
+        p.bdd.scenario_meta["tests/bdd/test_checkout.py::test_skip"] = ScenarioMeta(
+            scenario_name="My Scenario"
+        )
         printed = p.flush_scenario("passed", None)
         r = _make_result(
             "test_skip", "skipped", "Skipped: reason", file="tests/bdd/test_checkout.py"
@@ -843,12 +845,12 @@ class TestBddSkipFeatureHeader:
 
     def test_skip_prints_feature_header_if_new(self):
         p = _plugin()
-        p.bdd.scenario_names[
+        p.bdd.scenario_meta[
             "tests/bdd/test_checkout.py::test_unimplemented_feature"
-        ] = "Feature not yet implemented"
-        p.bdd.scenario_names[
-            "tests/bdd/test_checkout.py::test_unimplemented_feature__feature__"
-        ] = "Shopping cart checkout"
+        ] = ScenarioMeta(
+            scenario_name="Feature not yet implemented",
+            feature_name="Shopping cart checkout",
+        )
         printed = p.flush_scenario("passed", None)
         r = _make_result(
             "test_unimplemented_feature",
@@ -865,12 +867,12 @@ class TestBddSkipFeatureHeader:
         p = _plugin()
         p.bdd.cur_feature = "Shopping cart checkout"
         p.bdd.any_feature_printed = True
-        p.bdd.scenario_names[
+        p.bdd.scenario_meta[
             "tests/bdd/test_checkout.py::test_unimplemented_feature"
-        ] = "Feature not yet implemented"
-        p.bdd.scenario_names[
-            "tests/bdd/test_checkout.py::test_unimplemented_feature__feature__"
-        ] = "Shopping cart checkout"
+        ] = ScenarioMeta(
+            scenario_name="Feature not yet implemented",
+            feature_name="Shopping cart checkout",
+        )
         printed = p.flush_scenario("passed", None)
         r = _make_result(
             "test_unimplemented_feature",

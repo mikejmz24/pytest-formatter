@@ -13,6 +13,7 @@ from pytest_bdd import given, parsers, scenario, then, when
 
 from pytest_glaze import FormatterPlugin
 from pytest_glaze._colors import c_bdd_feature, c_bdd_scenario
+from pytest_glaze._types import ScenarioMeta
 
 # ── ANSI color codes ──────────────────────────────────────────────────────────
 from tests.helpers import (
@@ -321,8 +322,8 @@ def scenario_step_runtime_error(plugin):
 
 @given("a skipped BDD scenario", target_fixture="skip_result")
 def skipped_bdd_scenario(plugin):
-    plugin.bdd.scenario_names["tests/bdd/test_checkout.py::test_skip"] = (
-        "Feature not yet implemented"
+    plugin.bdd.scenario_meta["tests/bdd/test_checkout.py::test_skip"] = ScenarioMeta(
+        scenario_name="Feature not yet implemented"
     )
     return _make_result(
         "test_skip",

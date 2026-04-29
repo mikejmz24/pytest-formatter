@@ -174,3 +174,59 @@ def test_teardown_error_shows_after_pass(pytester):
     assert pass_pos != -1
     assert error_pos != -1
     assert pass_pos < error_pos
+
+
+# ── No-color path ─────────────────────────────────────────────────────────────
+# These tests verify the formatter degrades cleanly when ANSI is suppressed
+# via NO_COLOR=1. They use runpytest_subprocess because:
+#   1. _NO_COLOR is computed at module import time in _colors.py, so the
+#      child process must see the env var before importing pytest_glaze.
+#   2. The suite-wide conftest.py force-enables colors via monkeypatch —
+#      that fixture leaks into runpytest() (same-process) but not into
+#      runpytest_subprocess() (fresh interpreter).
+
+
+_ESC = "\x1b["
+
+
+def test_no_color_env_strips_ansi_from_pass_line(pytester, monkeypatch):
+    """NO_COLOR=1 must produce output free of ANSI escape sequences."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    pytester.makepyfile("""
+        def test_ok():
+            assert True
+        """)
+    result = pytester.runpytest_subprocess("--glaze", "-p", "no:terminal")
+    output = result.stdout.str()
+    assert "PASS" in output
+    assert _ESC not in output, f"ANSI escape leaked under NO_COLOR: {output!r}"
+
+
+def test_no_color_env_strips_ansi_from_fail_line(pytester, monkeypatch):
+    """Failure rendering must remain readable and ANSI-free under NO_COLOR=1."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    pytester.makepyfile("""
+        def test_bad():
+            assert 3 == 30
+        """)
+    result = pytester.runpytest_subprocess("--glaze", "-p", "no:terminal")
+    output = result.stdout.str()
+    assert "FAIL" in output
+    assert "test_bad" in output
+    assert _ESC not in output, f"ANSI escape leaked under NO_COLOR: {output!r}"
+
+
+def test_no_color_env_strips_ansi_from_summary_line(pytester, monkeypatch):
+    """Per-file summary and Total line must contain no ANSI under NO_COLOR=1."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    pytester.makepyfile("""
+        def test_a():
+            assert True
+        def test_b():
+            assert True
+        """)
+    result = pytester.runpytest_subprocess("--glaze", "-p", "no:terminal")
+    output = result.stdout.str()
+    assert "Total:" in output
+    assert "passed" in output
+    assert _ESC not in output, f"ANSI escape leaked under NO_COLOR: {output!r}"

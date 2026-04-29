@@ -28,6 +28,8 @@ from pytest_glaze._colors import (
 from pytest_glaze._testing import _FormatterTestingMixin
 from pytest_glaze._types import (
     MAX_E_LINES,
+    Outcome,
+    ScenarioMeta,
     TestResult,
     _BDDState,
     _BDDStep,
@@ -64,13 +66,13 @@ class FormatterPlugin(_FormatterTestingMixin):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     @staticmethod
-    def classify(report) -> str:
+    def classify(report) -> Outcome:
         """Map a raw pytest report to one of the canonical outcome strings."""
         if hasattr(report, "wasxfail"):
             return "xpassed" if report.outcome == "passed" else "xfailed"
         if report.when in ("setup", "teardown") and report.outcome == "failed":
             return "error"
-        return report.outcome
+        return report.outcome  # type: ignore[return-value]
 
     @staticmethod
     def extract_short(report, outcome: str) -> Optional[str]:
@@ -150,7 +152,7 @@ class FormatterPlugin(_FormatterTestingMixin):
         if r.nodeid in self.bdd.handled:
             self._render_bdd_handled(r)
             return
-        if r.outcome == "skipped" and r.nodeid in self.bdd.scenario_names:
+        if r.outcome == "skipped" and r.nodeid in self.bdd.scenario_meta:
             self._render_bdd_skip(r)
             return
         self._render_normal(r)
@@ -217,7 +219,8 @@ class FormatterPlugin(_FormatterTestingMixin):
     def _render_bdd_skip(self, r: TestResult) -> None:
         """Render a skipped BDD scenario."""
         self._open_file_group(r.file)
-        feature_name = self.bdd.scenario_names.get(r.nodeid + "__feature__", "")
+        meta = self.bdd.scenario_meta[r.nodeid]
+        feature_name = meta.feature_name or ""
         if feature_name and feature_name != self.bdd.cur_feature:
             if self.bdd.any_feature_printed:
                 self._p()
@@ -228,7 +231,7 @@ class FormatterPlugin(_FormatterTestingMixin):
             self._p()
         color_fn = _OUTCOME_COLOR["skipped"]
         badge = _BADGE["skipped"]
-        scenario_name = self.bdd.scenario_names[r.nodeid]
+        scenario_name = meta.scenario_name
         self._p(
             f"    {color_fn('---')} {badge}  {color_fn(f'Scenario: {scenario_name}')}"
         )
@@ -414,18 +417,19 @@ class FormatterPlugin(_FormatterTestingMixin):
                 continue
             scenario_obj = getattr(fn, "__scenario__", None)
             if scenario_obj is not None:
-                self.bdd.scenario_names[item.nodeid] = getattr(
-                    scenario_obj, "name", None
-                ) or str(scenario_obj)
+                scenario_name = getattr(scenario_obj, "name", None) or str(scenario_obj)
                 feature = getattr(scenario_obj, "feature", None)
-                if feature:
-                    self.bdd.scenario_names[item.nodeid + "__feature__"] = getattr(
-                        feature, "name", ""
-                    )
+                feature_name = getattr(feature, "name", None) if feature else None
+                self.bdd.scenario_meta[item.nodeid] = ScenarioMeta(
+                    scenario_name=scenario_name,
+                    feature_name=feature_name,
+                )
             elif fn.__doc__:
                 parts = fn.__doc__.split(": ", 1)
                 if len(parts) == 2:
-                    self.bdd.scenario_names[item.nodeid] = parts[1]
+                    self.bdd.scenario_meta[item.nodeid] = ScenarioMeta(
+                        scenario_name=parts[1]
+                    )
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_collectreport(self, report) -> None:
@@ -445,6 +449,9 @@ class FormatterPlugin(_FormatterTestingMixin):
         short_msg = self.extract_short(report, outcome)
         file, name = self.split_nodeid(report.nodeid)
 
+        # Sections are only rendered for non-passed outcomes — defer the
+        # copy so passing tests don't pay the allocation cost.
+        sections = list(report.sections) if outcome not in ("passed", "xfailed") else []
         result = TestResult(
             nodeid=report.nodeid,
             file=file,
@@ -452,7 +459,7 @@ class FormatterPlugin(_FormatterTestingMixin):
             outcome=outcome,
             duration=getattr(report, "duration", 0.0),
             short_msg=short_msg,
-            sections=list(report.sections),
+            sections=sections,
         )
 
         self._open_file_group(file)
