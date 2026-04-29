@@ -468,3 +468,75 @@ class TestApproxTableRowColors:
             strip_ansi(LineColorizer.color_e_line(header, "failed", is_first=False))
             == header
         )
+
+
+# ── LineColorizer.sanitize() — control character hardening ────────────────────
+
+
+class TestSanitizeControlChars:
+    """sanitize() must strip or visibly escape all hostile control characters.
+
+    Design rationale:
+    - CSI/OSC sequences: stripped entirely (no visible residue needed)
+    - C0 controls (\x00-\x08, \x0b-\x1f, \x7f): rendered as repr escapes
+      so hostile payloads are visible rather than silently swallowed
+    - \r: rendered as \\r to expose line-overwrite attacks (cursor-to-col-0)
+    - \n: preserved — the formatter relies on newlines for line splitting
+    - \t: preserved — tab is printable context, not an attack vector
+    - Printable Unicode: fully preserved
+    """
+
+    def test_strips_csi_sequences(self):
+        """CSI color/bold sequences must be stripped entirely."""
+        assert LineColorizer.sanitize("\033[91mred\033[0m") == "red"
+
+    def test_strips_osc_hyperlink_with_st_terminator(self):
+        """OSC hyperlink with ST terminator must be stripped, leaving link text."""
+        osc = "\033]8;;https://example.com\033\\click here\033]8;;\033\\"
+        assert LineColorizer.sanitize(osc) == "click here"
+
+    def test_strips_osc_hyperlink_with_bel_terminator(self):
+        """OSC hyperlink with BEL terminator must be stripped."""
+        osc = "\033]8;;https://example.com\007click here\033]8;;\007"
+        assert LineColorizer.sanitize(osc) == "click here"
+
+    def test_c0_null_byte_rendered_as_repr(self):
+        """Null byte \\x00 must appear as visible escape, not be silently dropped."""
+        assert LineColorizer.sanitize("hello\x00world") == "hello\\x00world"
+
+    def test_c0_backspace_rendered_as_repr(self):
+        """Backspace \\x08 could erase preceding output — must be visible."""
+        assert LineColorizer.sanitize("hello\x08world") == "hello\\x08world"
+
+    def test_c0_vertical_tab_rendered_as_repr(self):
+        """Vertical tab \\x0b must be visible."""
+        assert LineColorizer.sanitize("hello\x0bworld") == "hello\\x0bworld"
+
+    def test_c0_form_feed_rendered_as_repr(self):
+        """Form feed \\x0c clears some terminals — must be visible."""
+        assert LineColorizer.sanitize("hello\x0cworld") == "hello\\x0cworld"
+
+    def test_delete_char_rendered_as_repr(self):
+        """DEL \\x7f must be visible."""
+        assert LineColorizer.sanitize("hello\x7fworld") == "hello\\x7fworld"
+
+    def test_carriage_return_rendered_visibly(self):
+        """\\r moves cursor to col 0 and overwrites output — must appear as \\\\r."""
+        assert LineColorizer.sanitize("overwrite\rclean") == "overwrite\\rclean"
+
+    def test_newline_preserved(self):
+        """\\n must be preserved — formatter relies on it for line splitting."""
+        assert LineColorizer.sanitize("line1\nline2") == "line1\nline2"
+
+    def test_tab_preserved(self):
+        """\\t is printable context, not an attack vector — must be preserved."""
+        assert LineColorizer.sanitize("col1\tcol2") == "col1\tcol2"
+
+    def test_printable_unicode_preserved(self):
+        """Non-ASCII printable Unicode must pass through unchanged."""
+        assert LineColorizer.sanitize("héllo wörld 🏺") == "héllo wörld 🏺"
+
+    def test_mixed_hostile_payload(self):
+        """A payload combining CSI, OSC, and C0 controls must be fully sanitized."""
+        payload = "\033[91m\033]8;;https://x.com\033\\evil\033]8;;\033\\\x01\rclean"
+        assert LineColorizer.sanitize(payload) == "evil\\x01\\rclean"

@@ -192,6 +192,26 @@ Omit `--glaze` to use the default reporter. If you have `--glaze` in
 pytest -p no:pytest_glaze tests/
 ```
 
+### Disabling color
+
+pytest-glaze respects the [`NO_COLOR`](https://no-color.org/) convention.
+Set `NO_COLOR=1` to suppress all ANSI color output — useful for CI
+environments, plain-text log consumers, and accessibility needs:
+
+```bash
+NO_COLOR=1 pytest --glaze tests/
+```
+
+Color is also suppressed automatically when stdout is not a TTY (e.g.
+when piping output to a file or another command):
+
+```bash
+pytest --glaze tests/ > results.txt
+```
+
+No configuration required for either case — pytest-glaze detects both
+conditions at startup.
+
 ---
 
 ## What it formats

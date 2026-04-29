@@ -6,6 +6,7 @@ No dependencies on other pytest_glaze modules — safe to import from anywhere.
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Protocol, Set, Tuple, Union
 
@@ -95,7 +96,7 @@ class _SessionState:
     t0: float = 0.0
     col_errors: List[Tuple[str, str]] = field(default_factory=list)
     output_buf: Optional[List[str]] = None
-    counts: Dict[str, int] = field(default_factory=dict)
+    counts: Counter[Outcome] = field(default_factory=Counter)
 
 
 __all__ = [

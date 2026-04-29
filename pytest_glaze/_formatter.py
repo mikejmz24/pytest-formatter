@@ -7,7 +7,8 @@ Depends on _types, _colors, and _colorizer. No direct dependency on _hooks.
 import re
 import sys
 import time
-from typing import Dict, List, Optional, Tuple
+from collections import Counter
+from typing import List, Optional, Tuple
 
 import pytest
 
@@ -137,10 +138,7 @@ class FormatterPlugin(_FormatterTestingMixin):
 
     def _flush_file_summary(self) -> None:
         """Print the per-file '=> N passed, N failed' summary line."""
-        counts: Dict[str, int] = {}
-        for r in self._file_buf:
-            counts[r.outcome] = counts.get(r.outcome, 0) + 1
-
+        counts: Counter[Outcome] = Counter(r.outcome for r in self._file_buf)
         parts = [_SUMMARY_FMT[o](n) for o in _OUTCOME_ORDER if (n := counts.get(o))]
         self._p(f"  => {', '.join(parts) if parts else c_dim('nothing ran')}")
         self._file_buf = []
@@ -464,9 +462,7 @@ class FormatterPlugin(_FormatterTestingMixin):
 
         self._open_file_group(file)
         self._file_buf.append(result)
-        self.session.counts[result.outcome] = (
-            self.session.counts.get(result.outcome, 0) + 1
-        )
+        self.session.counts[result.outcome] += 1
         self._render_result(result)
 
     @pytest.hookimpl(trylast=True)
@@ -484,10 +480,7 @@ class FormatterPlugin(_FormatterTestingMixin):
                     self._p(f"    {c_dim(LineColorizer.sanitize(line))}")
 
         elapsed = time.monotonic() - self.session.t0
-        counts: Dict[str, int] = self.session.counts
-        # for r in self.session.results:
-        #     counts[r.outcome] = counts.get(r.outcome, 0) + 1
-
+        counts: Counter[Outcome] = self.session.counts
         parts = [_SUMMARY_FMT[o](n) for o in _OUTCOME_ORDER if (n := counts.get(o))]
         summary = ", ".join(parts) if parts else c_dim("no tests ran")
         self._p()

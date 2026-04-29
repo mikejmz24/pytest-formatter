@@ -387,15 +387,40 @@ class LineColorizer:
 
     @staticmethod
     def sanitize(text: str) -> str:
-        """Strip ANSI escape sequences from untrusted input (test names, messages).
+        """Strip ANSI escape sequences and C0 control characters from untrusted input.
 
-        Prevents malicious test names from injecting terminal control sequences
-        into the formatter output.
+        Prevents malicious or hostile test names, assertion messages, and captured
+        output from injecting terminal control sequences into formatter output.
+
+        Strips in this order:
+          1. CSI sequences: \033[ ... letter  (colors, bold, dim, cursor moves)
+          2. OSC sequences: \033] ... ST/BEL  (hyperlinks, title sets, icon names)
+          3. C0 control chars: \x00-\x08, \x0b-\x1f, \x7f  (non-printing controls)
+          4. Carriage return: \r rendered visibly as \\r to expose line-overwrite attacks
+
+        Preserves:
+          - \n  (line splitting relies on newlines throughout the formatter)
+          - \t  (tab is printable context, not a control attack vector)
+          - All printable Unicode
         """
-        return re.sub(
+        # Step 1 — strip CSI escape sequences (\033[ ... letter)
+        # Step 2 — strip OSC escape sequences (\033] ... ST or BEL)
+        s = re.sub(
             r"\033\[[\d;]*[a-zA-Z]"  # CSI: \033[ ... letter  (colors, bold, dim)
-            r"|\033\][^\033\007]*"  # OSC start: \033] ... (hyperlinks, title sets)
+            r"|\033\][^\033\007]*"  # OSC start: \033] ...
             r"(?:\033\\|\007)",  # OSC terminator: ST (\033\) or BEL (\007)
             "",
             text,
         )
+        # Step 3 — strip remaining C0 control chars (excludes \t=\x09, \n=\x0a)
+        # Rendered as their repr escape (e.g. \x01 → \\x01) so hostile payloads
+        # are visible in output rather than silently swallowed.
+        s = re.sub(
+            r"[\x00-\x08\x0b-\x1f\x7f]",
+            lambda m: repr(m.group(0))[1:-1],
+            s,
+        )
+        # Step 4 — make carriage returns visible to expose line-overwrite attacks
+        # \r alone moves the cursor to column 0 and overwrites preceding output.
+        s = s.replace("\r", "\\r")
+        return s

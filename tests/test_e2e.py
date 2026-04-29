@@ -446,3 +446,43 @@ def test_osc_hyperlink_in_assertion_does_not_corrupt_output(pytester):
 
     # Exit code 1 = assertion failed in the generated test, as expected.
     assert result.ret == 1, f"Expected failed exit, got ret={result.ret}:\n{output}"
+
+
+def test_c0_control_chars_in_assertion_do_not_reach_output(pytester):
+    """Raw C0 control characters in assertion messages must be escaped, not passed through.
+
+    Covers the hardened sanitize() path for characters beyond CSI/OSC:
+    - \\x01 (SOH) rendered as \\\\x01
+    - \\r (CR) rendered as \\\\r to prevent line-overwrite attacks
+    - \\x08 (BS) rendered as \\\\x08 to prevent output erasure
+
+    Uses runpytest() (in-process) — no color isolation needed here since
+    we are testing content sanitization, not color stripping.
+
+    Exit code must be 1 (assertion failed in the generated test).
+    """
+    pytester.makepyfile(r"""
+        def test_hostile_control_chars():
+            # Embed raw C0 control characters in an assertion message.
+            # These should appear as visible escape sequences in the output,
+            # not as raw bytes that corrupt terminal display.
+            payload = "hello\x01\x08\rworld"
+            assert payload == "clean", f"got: {payload}"
+    """)
+    result = pytester.runpytest("--glaze", "-p", "no:terminal")
+    output = result.stdout.str()
+
+    assert "FAIL" in output
+
+    # Raw control chars must not reach output.
+    assert "\x01" not in output, "SOH byte leaked into formatter output"
+    assert "\x08" not in output, "Backspace byte leaked into formatter output"
+    assert "\r" not in output, "Carriage return leaked into formatter output"
+
+    # Visible repr escapes must appear instead — confirms sanitize() fired.
+    assert "\\x01" in output or "\\x08" in output or "\\r" in output, (
+        "Expected visible escape sequences in output but found none. "
+        f"Output repr: {output!r}"
+    )
+
+    assert result.ret == 1, f"Expected failed exit, got ret={result.ret}:\n{output}"
