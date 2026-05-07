@@ -11,31 +11,17 @@ from __future__ import annotations
 import re
 from types import SimpleNamespace
 
-from pytest_glaze._colors import (
-    _BABY_BLUE,
-    _BRIGHT_GREEN,
-    _BRIGHT_RED,
-    _BRIGHT_YELLOW,
-    _DIM,
-    _SOFT_PEACH,
-    _STANDARD_RED,
-    _STEEL_BLUE,
-)
+from pytest_glaze._colors import _DARK_PALETTE
 from pytest_glaze._types import TestResult, _BDDStep
 
-# from typing import Any
-
-
-# ── Color constants ───────────────────────────────────────────────────────────
-
-GREEN = f"\033[{_BRIGHT_GREEN}m"
-BRIGHT_RED = f"\033[{_BRIGHT_RED}m"
-YELLOW = f"\033[{_BRIGHT_YELLOW}m"
-STANDARD_RED = f"\033[{_STANDARD_RED}m"
-SOFT_PEACH = f"\033[{_SOFT_PEACH}m"
-DIM = f"\033[{_DIM}m"
-BABY_BLUE = f"\033[{_BABY_BLUE}m"
-STEEL_BLUE = f"\033[{_STEEL_BLUE}m"
+GREEN = f"\033[{_DARK_PALETTE['pass']}m"
+BRIGHT_RED = f"\033[{_DARK_PALETTE['fail']}m"
+YELLOW = f"\033[{_DARK_PALETTE['skip']}m"
+STANDARD_RED = f"\033[{_DARK_PALETTE['error']}m"
+SOFT_PEACH = f"\033[{_DARK_PALETTE['emsg']}m"
+DIM = f"\033[{_DARK_PALETTE['dim']}m"
+BABY_BLUE = f"\033[{_DARK_PALETTE['bdd_feature']}m"
+STEEL_BLUE = f"\033[{_DARK_PALETTE['bdd_scenario']}m"
 
 
 # ── ANSI helpers ──────────────────────────────────────────────────────────────
