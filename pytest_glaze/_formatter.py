@@ -14,7 +14,6 @@ import pytest
 
 from pytest_glaze._colorizer import LineColorizer
 from pytest_glaze._colors import (
-    _BADGE,
     _OUTCOME_COLOR,
     _OUTCOME_ORDER,
     _SUMMARY_FMT,
@@ -25,6 +24,7 @@ from pytest_glaze._colors import (
     c_emsg,
     c_error,
     c_section,
+    get_badge,
 )
 from pytest_glaze._testing import _FormatterTestingMixin
 from pytest_glaze._types import (
@@ -171,7 +171,7 @@ class FormatterPlugin(_FormatterTestingMixin):
         return "\n".join(lines) or None
 
     def _render_bdd_step_line(self, bdd_step: _BDDStep) -> None:
-        badge = _BADGE.get(bdd_step.outcome, bdd_step.outcome.upper())
+        badge = get_badge(bdd_step.outcome)
         color_fn = _OUTCOME_COLOR.get(bdd_step.outcome, c_dim)
         keyword = getattr(bdd_step.step, "keyword", "").rstrip()
         dur = c_dim(f"  {bdd_step.duration * 1000:.1f}ms")
@@ -195,7 +195,7 @@ class FormatterPlugin(_FormatterTestingMixin):
         """Render a result that was already handled by BDD hooks."""
         if r.outcome == "error":
             self._p(
-                f"    {c_error('---')} {_BADGE['error']}  "
+                f"    {c_error('---')} {get_badge('error')}  "
                 f"{c_error('teardown failed')}{c_dim(f'  {r.duration * 1000:.1f}ms')}"
             )
             if r.short_msg:
@@ -228,7 +228,7 @@ class FormatterPlugin(_FormatterTestingMixin):
         if self.bdd.last_was_full_step:
             self._p()
         color_fn = _OUTCOME_COLOR["skipped"]
-        badge = _BADGE["skipped"]
+        badge = get_badge("skipped")
         scenario_name = meta.scenario_name
         self._p(
             f"    {color_fn('---')} {badge}  {color_fn(f'Scenario: {scenario_name}')}"
@@ -241,7 +241,7 @@ class FormatterPlugin(_FormatterTestingMixin):
 
     def _render_normal(self, r: TestResult) -> None:
         """Render a normal (non-BDD) test result."""
-        badge = _BADGE.get(r.outcome, r.outcome.upper())
+        badge = get_badge(r.outcome)
         color_fn = _OUTCOME_COLOR.get(r.outcome, c_dim)
         dur = c_dim(f"  {r.duration * 1000:.1f}ms")
 
@@ -312,7 +312,7 @@ class FormatterPlugin(_FormatterTestingMixin):
                     self._p(item)
             self.bdd.last_was_full_step = False
             if scenario_line is not None:
-                badge = _BADGE.get(outcome, outcome.upper())
+                badge = get_badge(outcome)
                 color_fn = _OUTCOME_COLOR.get(outcome, c_dim)
                 dur = c_dim(f"  {total_dur * 1000:.1f}ms")
                 plain = re.sub(r"\033\[[\d;]*m", "", scenario_line).strip()
