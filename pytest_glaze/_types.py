@@ -14,6 +14,7 @@ MAX_E_LINES: int = 15
 
 # Canonical outcome strings — must stay aligned with _OUTCOME_ORDER in _colors.
 Outcome = Literal["passed", "failed", "skipped", "error", "xfailed", "xpassed"]
+Theme = Literal["auto", "dark", "light"]
 
 
 class _StepLike(Protocol):
@@ -107,4 +108,5 @@ __all__ = [
     "_BDDStep",
     "_BDDState",
     "_SessionState",
+    "Theme",
 ]
