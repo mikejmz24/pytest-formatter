@@ -56,16 +56,10 @@ _what failed, and what exactly was wrong?_
 
 ### Color convention
 
-Every color carries one meaning, applied consistently across every line type:
+Every color carries one meaning, applied consistently across every line type.
+Colors adapt automatically to the active theme (`--glaze-theme`).
 
-| Badge | Color        | Meaning                                     | Where you see it                                                         |
-| :---: | ------------ | ------------------------------------------- | ------------------------------------------------------------------------ |
-|  🟢   | Bright green | Received ✓ / expected value                 | PASS badge, `---`, assert right side, `-` diff, `Expected:` label        |
-|  🔴   | Bright red   | Received ✗ / wrong value / expected failure | FAIL · XFAIL badge, `---`, assert left side, `+` diff, `Obtained:` label |
-|  🟡   | Yellow       | Skipped / unexpected pass                   | SKIP · XPASS badge, `---`, skip reason                                   |
-|  🔴   | Standard red | Collection / setup errors                   | ERROR badge, `---`, collection error messages                            |
-|  🍑   | Soft peach   | Context / prose                             | Exception messages, diff context, `E` prefix, operator keywords          |
-|  🔅   | Dim          | Metadata                                    | Duration, collection count, `Total:` line                                |
+![pytest-glaze color semantics](docs/images/color_palette.svg)
 
 > **Diff convention:** pytest-glaze follows pytest's assertion semantics,
 > not git diff convention. `-` marks the **expected** value (green — the
@@ -210,6 +204,33 @@ pytest --glaze tests/ > results.txt
 
 No configuration required for either case — pytest-glaze detects both
 conditions at startup.
+
+---
+
+### Theme selection
+
+pytest-glaze ships with dark and light color palettes. The active theme
+is selected via `--glaze-theme`:
+
+```bash
+pytest --glaze --glaze-theme=dark tests/    # explicit dark (default)
+pytest --glaze --glaze-theme=light tests/   # explicit light
+pytest --glaze --glaze-theme=auto tests/    # auto-detect (default)
+```
+
+With `auto` (the default), pytest-glaze reads the `$COLORFGBG` environment
+variable set by your terminal emulator at startup. A background index ≥ 7
+is treated as a light terminal; anything below is treated as dark. If
+`$COLORFGBG` is not set (Ghostty, WezTerm, VS Code integrated terminal),
+the formatter falls back to dark.
+
+To always use a specific theme, add it to your pytest configuration:
+
+```toml
+# pyproject.toml
+[tool.pytest.ini_options]
+addopts = "--glaze --glaze-theme=light"
+```
 
 ---
 

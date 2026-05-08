@@ -47,18 +47,18 @@ _DARK_PALETTE: Dict[str, str] = {
 }
 
 _LIGHT_PALETTE: Dict[str, str] = {
-    "pass": "0;38;2;180;0;100",
-    "fail": "0;38;2;180;0;100",
-    "error": "0;38;2;180;0;100",
-    "skip": "0;38;2;180;0;100",
-    "xfail": "0;38;2;180;0;100",
-    "xpass": "0;38;2;180;0;100",
-    "emsg": "0;38;2;180;0;100",
-    "section": "0;38;2;180;0;100",
-    "dim": "0;38;2;180;0;100",
-    "bold": "0;38;2;180;0;100",
-    "bdd_feature": "0;38;2;180;0;100",
-    "bdd_scenario": "0;38;2;180;0;100",
+    "pass": "0;38;2;0;120;0",  # dark forest green
+    "fail": "0;38;2;200;0;0",  # deep red
+    "error": "0;38;2;170;0;0",  # dark red
+    "skip": "0;38;2;160;90;0",  # dark burnt amber
+    "xfail": "0;38;2;200;0;0",  # deep red
+    "xpass": "0;38;2;160;90;0",  # dark burnt amber
+    "emsg": "0;38;2;80;0;160",  # dark violet
+    "section": "0;38;2;80;80;80",  # dark gray
+    "dim": "2",
+    "bold": "1",
+    "bdd_feature": "0;38;2;0;50;160",  # deep navy
+    "bdd_scenario": "0;38;2;0;80;170",  # deep ocean blue
 }
 
 _active_palette: Dict[str, str] = _DARK_PALETTE

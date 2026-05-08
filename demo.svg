@@ -1,141 +1,104 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 580" width="780" height="580">
-  <defs>
-    <style>
-      .terminal { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace; font-size: 13px; }
-      .dim      { fill: #666666; }
-      .bold     { fill: #e2e2e2; font-weight: bold; }
-      .white    { fill: #e2e2e2; }
-      .pass     { fill: #5fd700; }   /* c_pass  — bright green  */
-      .fail     { fill: #ff5f5f; }   /* c_fail  — bright red    */
-      .error    { fill: #af0000; }   /* c_error — standard red  */
-      .skip     { fill: #ffd700; }   /* c_skip  — bright yellow */
-      .xpass    { fill: #ffd700; }   /* c_xpass — bright yellow */
-      .xfail    { fill: #ff5f5f; }   /* c_xfail — bright red    */
-      .emsg     { fill: #fccdae; }   /* c_emsg  — soft peach    */
-      .section  { fill: #808080; }   /* c_section — gray        */
-    </style>
-  </defs>
+<svg width="100%" viewBox="0 0 680 320" role="img" xmlns="http://www.w3.org/2000/svg" style="">
+<title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">pytest-glaze animated demo</title>
+<desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Animated terminal showing pytest-glaze output with typewriter effect, switching between dark and light themes</desc>
 
-  <!-- Terminal window chrome -->
-  <rect width="780" height="580" rx="10" ry="10" fill="#0d1117"/>
-  <rect width="780" height="36" rx="10" ry="10" fill="#161b22"/>
-  <rect x="0" y="20" width="780" height="16" fill="#161b22"/>
+<defs>
+  <clipPath id="dc">
+    <rect x="50" y="47" height="18">
+      <animate attributeName="width" values="0;0;155;155;0;0" keyTimes="0;0.019;0.113;0.460;0.469;1" calcMode="linear" dur="16s" repeatCount="indefinite"/>
+    </rect>
+  </clipPath>
+</defs>
 
-  <!-- Traffic lights -->
-  <circle cx="20" cy="18" r="6" fill="#ff5f57"/>
-  <circle cx="40" cy="18" r="6" fill="#febc2e"/>
-  <circle cx="60" cy="18" r="6" fill="#28c840"/>
+<!-- DARK THEME -->
+<g style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+  <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.469;0.531;0.969;1" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="20" y="8" width="640" height="292" rx="10" fill="#0d1117" style="fill:rgb(13, 17, 23);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="20" y="8" width="640" height="30" rx="10" fill="#161b22" style="fill:rgb(22, 27, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="20" y="28" width="640" height="10" fill="#161b22" style="fill:rgb(22, 27, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="44" cy="23" r="5.5" fill="#ff5f57" style="fill:rgb(255, 95, 87);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="62" cy="23" r="5.5" fill="#febc2e" style="fill:rgb(254, 188, 46);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="80" cy="23" r="5.5" fill="#28c840" style="fill:rgb(40, 200, 64);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="340" y="27" text-anchor="middle" font-family="monospace" font-size="11" fill="#444" style="fill:rgb(68, 68, 68);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto">pytest-glaze — make test</text>
 
-  <!-- Window title -->
-  <text x="390" y="23" text-anchor="middle" class="terminal dim" font-size="12">pytest-glaze — make test-corpus</text>
+  <text x="36" y="60" font-family="monospace" font-size="12" fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">$</text>
+  <text x="50" y="60" font-family="monospace" font-size="12" fill="#e2e2e2" clip-path="url(#dc)" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">pytest --glaze tests/</text>
 
-  <!-- Content starts at y=56, line-height=22 -->
-
-  <!-- collected -->
-  <text x="20" y="66" class="terminal dim">collected </text>
-  <text x="98" y="66" class="terminal bold">57</text>
-  <text x="113" y="66" class="terminal dim"> tests</text>
-
-  <!-- blank line -->
-
-  <!-- file header -->
-  <text x="20" y="104" class="terminal white">tests/test_assertions.py</text>
-
-  <!-- PASS lines -->
-  <text x="32" y="126" class="terminal pass">---</text>
-  <text x="58" y="126" class="terminal pass"> PASS </text>
-  <text x="103" y="126" class="terminal white"> test_pass_int</text>
-  <text x="534" y="126" class="terminal dim">  0.2ms</text>
-
-  <text x="32" y="148" class="terminal pass">---</text>
-  <text x="58" y="148" class="terminal pass"> PASS </text>
-  <text x="103" y="148" class="terminal white"> test_pass_string</text>
-  <text x="534" y="148" class="terminal dim">  0.2ms</text>
-
-  <!-- FAIL -->
-  <text x="32" y="170" class="terminal fail">---</text>
-  <text x="58" y="170" class="terminal fail"> FAIL </text>
-  <text x="103" y="170" class="terminal white"> test_fail_int_equality</text>
-  <text x="534" y="170" class="terminal dim">  0.4ms</text>
-  <!-- E line: assert 3 == 30 -->
-  <text x="44" y="192" class="terminal emsg">E  </text>
-  <text x="68" y="192" class="terminal emsg">assert </text>
-  <text x="118" y="192" class="terminal fail">3</text>
-  <text x="128" y="192" class="terminal emsg"> == </text>
-  <text x="155" y="192" class="terminal pass">30</text>
-
-  <!-- FAIL with is not None -->
-  <text x="32" y="214" class="terminal fail">---</text>
-  <text x="58" y="214" class="terminal fail"> FAIL </text>
-  <text x="103" y="214" class="terminal white"> test_fail_none_check</text>
-  <text x="534" y="214" class="terminal dim">  0.3ms</text>
-  <text x="44" y="236" class="terminal emsg">E  assert </text>
-  <text x="116" y="236" class="terminal fail">None</text>
-  <text x="148" y="236" class="terminal emsg"> is </text>
-  <text x="172" y="236" class="terminal pass">not None</text>
-
-  <!-- SKIP -->
-  <text x="32" y="258" class="terminal skip">---</text>
-  <text x="58" y="258" class="terminal skip"> SKIP </text>
-  <text x="103" y="258" class="terminal white"> test_skip_platform_conditional</text>
-  <text x="534" y="258" class="terminal dim">  0.2ms</text>
-  <text x="44" y="280" class="terminal skip">E  Skipped: Windows-only feature</text>
-
-  <!-- XFAIL -->
-  <text x="32" y="302" class="terminal xfail">---</text>
-  <text x="58" y="302" class="terminal xfail"> XFAIL</text>
-  <text x="110" y="302" class="terminal white"> test_xfail_expected_failure</text>
-  <text x="534" y="302" class="terminal dim">  0.3ms</text>
-  <text x="44" y="324" class="terminal xfail">E  xfailed: known bug — assert will fail as expected</text>
-
-  <!-- XPASS -->
-  <text x="32" y="346" class="terminal xpass">---</text>
-  <text x="58" y="346" class="terminal xpass"> XPASS</text>
-  <text x="110" y="346" class="terminal white"> test_xpass_unexpected_pass</text>
-  <text x="534" y="346" class="terminal dim">  0.2ms</text>
-  <text x="44" y="368" class="terminal xpass">E  xpassed: this test unexpectedly passes</text>
-
-  <!-- ERROR -->
-  <text x="32" y="390" class="terminal error">---</text>
-  <text x="58" y="390" class="terminal error"> ERROR</text>
-  <text x="110" y="390" class="terminal white"> test_error_in_fixture_teardown</text>
-  <text x="534" y="390" class="terminal dim">  0.3ms</text>
-  <text x="44" y="412" class="terminal emsg">E  RuntimeError: Teardown exploded intentionally</text>
-
-  <!-- per-file summary -->
-  <text x="32" y="444" class="terminal dim">  =></text>
-  <text x="58" y="444" class="terminal pass"> 2 passed</text>
-  <text x="130" y="444" class="terminal white">,</text>
-  <text x="138" y="444" class="terminal fail"> 2 failed</text>
-  <text x="210" y="444" class="terminal white">,</text>
-  <text x="218" y="444" class="terminal error"> 1 error</text>
-  <text x="275" y="444" class="terminal white">,</text>
-  <text x="283" y="444" class="terminal skip"> 1 skipped</text>
-  <text x="363" y="444" class="terminal white">,</text>
-  <text x="371" y="444" class="terminal xfail"> 1 xfailed</text>
-  <text x="450" y="444" class="terminal white">,</text>
-  <text x="458" y="444" class="terminal xpass"> 1 xpassed</text>
-
-  <!-- divider -->
-  <line x1="20" y1="462" x2="760" y2="462" stroke="#30363d" stroke-width="1"/>
-
-  <!-- Total line -->
-  <text x="20" y="484" class="terminal bold">Total: </text>
-  <text x="72" y="484" class="terminal pass">2 passed</text>
-  <text x="136" y="484" class="terminal white">, </text>
-  <text x="148" y="484" class="terminal fail">2 failed</text>
-  <text x="212" y="484" class="terminal white">, </text>
-  <text x="224" y="484" class="terminal error">1 error</text>
-  <text x="276" y="484" class="terminal white">, </text>
-  <text x="288" y="484" class="terminal skip">1 skipped</text>
-  <text x="360" y="484" class="terminal white">, </text>
-  <text x="372" y="484" class="terminal xfail">1 xfailed</text>
-  <text x="444" y="484" class="terminal white">, </text>
-  <text x="456" y="484" class="terminal xpass">1 xpassed</text>
-  <text x="534" y="484" class="terminal dim">  in 0.73s</text>
-
-  <!-- cursor blink -->
-  <rect x="20" y="504" width="8" height="14" fill="#5fd700" opacity="0.8">
-    <animate attributeName="opacity" values="0.8;0;0.8" dur="1.2s" repeatCount="indefinite"/>
+  <rect x="50" y="47" width="7" height="14" fill="#e2e2e2" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="x" values="50;50;206;206;50" keyTimes="0;0.019;0.113;0.460;0.469" calcMode="linear" dur="16s" repeatCount="indefinite" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.119;0.144;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
   </rect>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.144;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="36" y="96" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">collected </tspan><tspan fill="#e2e2e2" font-weight="bold" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:auto">6</tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> tests</tspan></text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.188;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="36" y="130" font-family="monospace" font-size="12" fill="#e2e2e2" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">tests/corpus/test_assertions.py</text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.219;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="48" y="148" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#00d700" style="fill:rgb(0, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- PASS </tspan><tspan fill="#e2e2e2" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_simple_equality   </tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.1ms</tspan></text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.244;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="48" y="166" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#00d700" style="fill:rgb(0, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- PASS </tspan><tspan fill="#e2e2e2" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_string_match       </tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.1ms</tspan></text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.269;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="48" y="184" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#ff5555" style="fill:rgb(255, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- FAIL </tspan><tspan fill="#e2e2e2" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_price_calculation  </tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.3ms</tspan></text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.288;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="60" y="200" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#fccdae" style="fill:rgb(252, 205, 174);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">E  assert </tspan><tspan fill="#ff5555" style="fill:rgb(255, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">95.0</tspan><tspan fill="#fccdae" style="fill:rgb(252, 205, 174);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> == </tspan><tspan fill="#00d700" style="fill:rgb(0, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">90</tspan></text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.313;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="48" y="218" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#ffd700" style="fill:rgb(255, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- SKIP </tspan><tspan fill="#e2e2e2" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_external_api      </tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.1ms</tspan></text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.338;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="48" y="237" font-family="monospace" font-size="11" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">  =&gt; </tspan><tspan fill="#00d700" style="fill:rgb(0, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">2 passed</tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#ff5555" style="fill:rgb(255, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 failed</tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#ffd700" style="fill:rgb(255, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 skipped</tspan></text>
+  </g>
+
+  <g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <animate attributeName="opacity" values="0;1;0;0" keyTimes="0;0.363;0.469;1" calcMode="discrete" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <text x="36" y="272" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#e2e2e2" font-weight="bold" style="fill:rgb(226, 226, 226);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:auto">Total: </tspan><tspan fill="#00d700" style="fill:rgb(0, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">2 passed</tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#ff5555" style="fill:rgb(255, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 failed</tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#ffd700" style="fill:rgb(255, 215, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 skipped</tspan><tspan fill="#555" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">  in 0.08s</tspan></text>
+  </g>
+</g>
+
+<!-- LIGHT THEME -->
+<g opacity="0" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+  <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.469;0.531;0.969;1" dur="16s" repeatCount="indefinite" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="20" y="8" width="640" height="292" rx="10" fill="#ffffff" style="fill:rgb(255, 255, 255);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="20" y="8" width="640" height="292" rx="10" fill="none" stroke="#e0e0e0" stroke-width="0.5" style="fill:none;stroke:rgb(224, 224, 224);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="20" y="8" width="640" height="30" rx="10" fill="#f0f0f0" style="fill:rgb(240, 240, 240);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="20" y="28" width="640" height="10" fill="#f0f0f0" style="fill:rgb(240, 240, 240);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="44" cy="23" r="5.5" fill="#ff5f57" style="fill:rgb(255, 95, 87);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="62" cy="23" r="5.5" fill="#febc2e" style="fill:rgb(254, 188, 46);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="80" cy="23" r="5.5" fill="#28c840" style="fill:rgb(40, 200, 64);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="340" y="27" text-anchor="middle" font-family="monospace" font-size="11" fill="#bbb" style="fill:rgb(187, 187, 187);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto">pytest-glaze — make test</text>
+
+  <text x="36" y="60" font-family="monospace" font-size="12" fill="#aaa" style="fill:rgb(170, 170, 170);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">$</text>
+  <text x="50" y="60" font-family="monospace" font-size="12" fill="#1a1a1a" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">pytest --glaze --glaze-theme=light tests/</text>
+
+  <text x="36" y="96" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">collected </tspan><tspan fill="#1a1a1a" font-weight="bold" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:auto">6</tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> tests</tspan></text>
+  <text x="36" y="130" font-family="monospace" font-size="12" fill="#1a1a1a" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">tests/corpus/test_assertions.py</text>
+  <text x="48" y="148" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#007800" style="fill:rgb(0, 120, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- PASS </tspan><tspan fill="#1a1a1a" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_simple_equality   </tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.1ms</tspan></text>
+  <text x="48" y="166" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#007800" style="fill:rgb(0, 120, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- PASS </tspan><tspan fill="#1a1a1a" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_string_match       </tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.1ms</tspan></text>
+  <text x="48" y="184" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#c80000" style="fill:rgb(200, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- FAIL </tspan><tspan fill="#1a1a1a" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_price_calculation  </tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.3ms</tspan></text>
+  <text x="60" y="200" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#5000a0" style="fill:rgb(80, 0, 160);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">E  assert </tspan><tspan fill="#c80000" style="fill:rgb(200, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">95.0</tspan><tspan fill="#5000a0" style="fill:rgb(80, 0, 160);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> == </tspan><tspan fill="#007800" style="fill:rgb(0, 120, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">90</tspan></text>
+  <text x="48" y="218" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#a05a00" style="fill:rgb(160, 90, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">--- SKIP </tspan><tspan fill="#1a1a1a" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"> test_external_api      </tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">0.1ms</tspan></text>
+  <text x="48" y="237" font-family="monospace" font-size="11" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">  =&gt; </tspan><tspan fill="#007800" style="fill:rgb(0, 120, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">2 passed</tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#c80000" style="fill:rgb(200, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 failed</tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#a05a00" style="fill:rgb(160, 90, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 skipped</tspan></text>
+  <text x="36" y="272" font-family="monospace" font-size="12" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto"><tspan fill="#1a1a1a" font-weight="bold" style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:auto">Total: </tspan><tspan fill="#007800" style="fill:rgb(0, 120, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">2 passed</tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#c80000" style="fill:rgb(200, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 failed</tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">, </tspan><tspan fill="#a05a00" style="fill:rgb(160, 90, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">1 skipped</tspan><tspan fill="#888" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:monospace;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">  in 0.08s</tspan></text>
+</g>
+
 </svg>
