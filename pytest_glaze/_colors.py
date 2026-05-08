@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import sys
+from contextlib import contextmanager
 from typing import Callable, Dict
 
 from pytest_glaze._types import Theme
@@ -100,6 +101,18 @@ def reset_theme() -> None:
     """Reset the active palette to the default (dark). For use in tests."""
     global _active_palette  # pylint: disable=global-statement
     _active_palette = _DARK_PALETTE
+
+
+@contextmanager
+def theme_context(theme: Theme):
+    """Context manager that switches theme and restores previous palette on exit."""
+    global _active_palette  # pylint: disable=global-statement
+    previous = _active_palette
+    set_theme(theme)
+    try:
+        yield
+    finally:
+        _active_palette = previous
 
 
 def get_active_palette() -> Dict[str, str]:
@@ -249,4 +262,5 @@ __all__ = [
     "_SUMMARY_FMT",
     "get_active_palette",
     "set_active_palette",
+    "theme_context",
 ]
