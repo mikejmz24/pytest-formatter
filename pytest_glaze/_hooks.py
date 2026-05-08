@@ -15,6 +15,7 @@ from typing import Optional
 
 import pytest
 
+from pytest_glaze._colors import set_theme
 from pytest_glaze._formatter import FormatterPlugin
 
 try:
@@ -91,6 +92,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Show full step-by-step BDD output. Default is compact (scenario lines only).",
     )
+    group.addoption(
+        "--glaze-theme",
+        choices=["auto", "dark", "light"],
+        default="auto",
+        help="Color theme for pytest-glaze output. 'auto' detects from $COLORFGBG. (default: auto)",
+    )
 
 
 @pytest.hookimpl(trylast=True)
@@ -131,6 +138,8 @@ def pytest_configure(config: pytest.Config) -> None:
     if existing is None:
         plugin = FormatterPlugin()
         plugin.bdd.steps_mode = config.getoption("--bdd-steps", default=False)
+        theme = config.getoption("--glaze-theme", default="auto")
+        set_theme(theme)
         config.pluginmanager.register(plugin, _plugin_key)
     else:
         plugin = existing
