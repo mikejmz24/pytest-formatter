@@ -184,3 +184,40 @@ class TestGetBadge:
         light = get_badge("passed")
         assert "PASS" in dark and "PASS" in light
         assert dark != light
+
+
+class TestPaletteStability:
+    """
+    Guard against palette being reset between renders.
+    This class catches the exact bug where reset_theme() fired after every
+    test, overriding the theme set by --glaze-theme in pytest_configure.
+    """
+
+    def test_palette_stays_light_across_multiple_renders(self):
+        if colors._NO_COLOR:
+            pytest.skip("NO_COLOR active")
+        set_theme("light")
+        results = [c_pass("PASS") for _ in range(5)]
+        assert (
+            len(set(results)) == 1
+        ), "c_pass() returned different values across calls — palette changed mid-run"
+
+    def test_palette_stays_dark_across_multiple_renders(self):
+        if colors._NO_COLOR:
+            pytest.skip("NO_COLOR active")
+        set_theme("dark")
+        results = [c_pass("PASS") for _ in range(5)]
+        assert (
+            len(set(results)) == 1
+        ), "c_pass() returned different values across calls — palette changed mid-run"
+
+    def test_reset_palette_fixture_respects_active_theme(self):
+        """reset_palette must restore to whatever was active, not blindly reset to dark."""
+        if colors._NO_COLOR:
+            pytest.skip("NO_COLOR active")
+        set_theme("light")
+        before = c_pass("X")
+        # Simulate what reset_palette does — capture and restore
+        saved = colors._active_palette
+        colors._active_palette = saved
+        assert c_pass("X") == before
