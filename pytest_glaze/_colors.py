@@ -8,10 +8,15 @@ call time so all downstream rendering picks up the change immediately.
 
 from __future__ import annotations
 
+import ctypes as _ctypes
 import os
+import re
+import select
 import sys
+import termios
+import tty
 from contextlib import contextmanager
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 from pytest_glaze._types import Theme
 
@@ -66,23 +71,281 @@ _active_palette: Dict[str, str] = _DARK_PALETTE
 # ── Theme helpers ─────────────────────────────────────────────────────────────
 
 
-def detect_theme() -> Theme:
+def _query_osc11(timeout: float = 0.1) -> Optional[str]:
     """
-    Infer the terminal background theme from environment variables.
+    Query the terminal background color via OSC 11 escape sequence.
 
-    Checks $COLORFGBG (set by xterm, iTerm2, most Linux terminals).
-    Format: 'fg;bg' or 'fg;...;bg'. Background index >= 7 means light.
+    OSC 11 is the standard xterm protocol for querying the terminal background
+    color. We write ``\\033]11;?\\033\\\\`` to stdout and read the response from
+    stdin. The response format is::
 
-    Falls back to 'dark' — a safer default for unknown terminals.
+        \\033]11;rgb:RRRR/GGGG/BBBB\\033\\\\
+
+    Where RRRR/GGGG/BBBB are 16-bit hex values (0000–ffff).
+
+    Safety gates — returns None immediately if any of these are true:
+      - stdout or stdin is not a TTY (piped, redirected, CI environment)
+      - $TMUX is set (tmux does not support OSC 11 and would swallow the query)
+      - $TERM starts with "screen" (screen multiplexer, same issue as tmux)
+      - Platform is Windows (handled separately via ctypes)
+      - The response is pure black rgb:0000/0000/0000 (known buggy terminals
+        such as zellij and tabby always report black regardless of actual theme)
+
+    Returns the raw rgb string (e.g. ``'rgb:ffff/ffff/ffff'``) or None if
+    the query failed, timed out, or was skipped for safety.
+    """
+
+    # Consolidated safety gate — skip if any unsafe condition is met
+    unsafe = (
+        not sys.stdin.isatty()
+        or not sys.stdout.isatty()
+        or bool(os.environ.get("TMUX"))
+        or os.environ.get("TERM", "").startswith("screen")
+        or sys.platform == "win32"
+    )
+    if unsafe:
+        return None
+
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        # Write OSC 11 query: ESC ] 11 ; ? ESC backslash
+        sys.stdout.write("\033]11;?\033\\")
+        sys.stdout.flush()
+        # Wait for response with timeout
+        ready, _, _ = select.select([sys.stdin], [], [], timeout)
+        if not ready:
+            return None
+        response = ""
+        while True:
+            ready, _, _ = select.select([sys.stdin], [], [], 0.05)
+            if not ready:
+                break
+            ch = sys.stdin.read(1)
+            response += ch
+            # Response ends with ST (ESC \) or BEL
+            if response.endswith("\033\\") or response.endswith("\007"):
+                break
+    except Exception:  # pylint: disable=broad-except
+        return None
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+    # Extract rgb:RRRR/GGGG/BBBB from response
+    match = re.search(r"rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+)", response)
+    if not match:
+        return None
+    rgb = match.group(0)
+    # Reject pure black — known buggy terminals (zellij, tabby) always report
+    # rgb:0000/0000/0000 regardless of actual background color
+    if (
+        match.group(1) == "0000"
+        and match.group(2) == "0000"
+        and match.group(3) == "0000"
+    ):
+        return None
+    return rgb
+
+
+def _osc11_is_light(rgb: str) -> bool:
+    """
+    Determine if an OSC 11 rgb response represents a light background.
+
+    Converts the 16-bit per-channel rgb string to perceived luminance using
+    the standard ITU-R BT.709 coefficients. A luminance above 0.5 (mid-point
+    of the 0.0–1.0 scale) is treated as a light background.
+
+    Formula: Y = 0.2126R + 0.7152G + 0.0722B
+
+    Args:
+        rgb: A string of the form ``'rgb:RRRR/GGGG/BBBB'`` where each
+             component is a 16-bit hex value (0000–ffff).
+
+    Returns:
+        True if the background is light, False if dark.
+    """
+    match = re.search(r"rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+)", rgb)
+    if not match:
+        return False
+
+    # Normalise to 0.0–1.0 based on actual hex length (8-bit=2 chars, 16-bit=4 chars)
+    def _norm(hex_str: str) -> float:
+        max_val = (1 << (len(hex_str) * 4)) - 1
+        return int(hex_str, 16) / max_val
+
+    r = _norm(match.group(1))
+    g = _norm(match.group(2))
+    b = _norm(match.group(3))
+    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return luminance > 0.5
+
+
+def _windows_is_light() -> bool:
+    """
+    Detect terminal background brightness on Windows via the console API.
+
+    Uses ``ctypes`` to call ``GetConsoleScreenBufferInfo`` and reads the
+    ``wAttributes`` field. The background color occupies bits 4–6 of
+    wAttributes as a 3-bit RGB value (each bit = one color channel at full
+    intensity). We compute the luminance of that color and treat values
+    above 0.5 as a light background.
+
+    Returns False (dark) on any error — ctypes unavailable, not a real
+    console, or the API call fails.
+
+    Only called on ``sys.platform == 'win32'``.
+    """
+    windll = getattr(_ctypes, "windll", None)
+    if windll is None:
+        return False
+    try:
+
+        class Coord(_ctypes.Structure):  # pylint: disable=too-few-public-methods
+            _fields_ = [("X", _ctypes.c_short), ("Y", _ctypes.c_short)]
+
+        class SmallRect(_ctypes.Structure):  # pylint: disable=too-few-public-methods
+            _fields_ = [
+                ("Left", _ctypes.c_short),
+                ("Top", _ctypes.c_short),
+                ("Right", _ctypes.c_short),
+                ("Bottom", _ctypes.c_short),
+            ]
+
+        class ConsoleScreenBufferInfo(
+            _ctypes.Structure
+        ):  # pylint: disable=too-few-public-methods
+            _fields_ = [
+                ("dwSize", Coord),
+                ("dwCursorPosition", Coord),
+                ("wAttributes", _ctypes.c_ushort),
+                ("srWindow", SmallRect),
+                ("dwMaximumWindowSize", Coord),
+            ]
+
+        handle = windll.kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+        info = ConsoleScreenBufferInfo()
+        if not windll.kernel32.GetConsoleScreenBufferInfo(handle, _ctypes.byref(info)):
+            return False
+        attrs = info.wAttributes
+        bg_r = (attrs >> 6) & 1
+        bg_g = (attrs >> 5) & 1
+        bg_b = (attrs >> 4) & 1
+        luminance = 0.2126 * bg_r + 0.7152 * bg_g + 0.0722 * bg_b
+        return luminance > 0.5
+    except Exception:  # pylint: disable=broad-except
+        return False
+
+
+def _detect_colorfgbg() -> Optional[Theme]:
+    """
+    Detect theme from $COLORFGBG — set by xterm, iTerm2, urxvt, Konsole.
+
+    Format: 'fg;bg' or 'fg;...;bg'. Last segment is the background color
+    index: index >= 7 means a light background.
+
+    Returns 'light', 'dark', or None if the variable is absent or malformed.
     """
     colorfgbg = os.environ.get("COLORFGBG", "").strip()
-    if colorfgbg:
-        try:
-            bg = int(colorfgbg.split(";")[-1])
-            return "light" if bg >= 7 else "dark"
-        except ValueError:
-            pass
-    return "dark"
+    if not colorfgbg:
+        return None
+    try:
+        bg = int(colorfgbg.split(";")[-1])
+        return "light" if bg >= 7 else "dark"
+    except ValueError:
+        return None
+
+
+def _detect_osc11() -> Optional[Theme]:
+    """
+    Detect theme via OSC 11 terminal background color query.
+
+    Delegates to _query_osc11() for the actual query and _osc11_is_light()
+    for luminance calculation. Returns None if the query was skipped or
+    timed out.
+    """
+    rgb = _query_osc11()
+    if rgb is None:
+        return None
+    return "light" if _osc11_is_light(rgb) else "dark"
+
+
+def _detect_term_program() -> Optional[Theme]:
+    """
+    Detect theme from $TERM_PROGRAM.
+
+    Apple Terminal is almost always configured with a light background on
+    macOS (the system default). Used as a weak heuristic when OSC 11 is
+    unavailable.
+
+    Returns 'light' for Apple_Terminal, None for everything else.
+    """
+    if os.environ.get("TERM_PROGRAM") == "Apple_Terminal":
+        return "light"
+    return None
+
+
+def _detect_windows() -> Optional[Theme]:
+    """
+    Detect theme via Windows console API.
+
+    Only active on win32. Delegates to _windows_is_light() for the actual
+    API call. Returns None on non-Windows platforms.
+    """
+    platform = sys.platform  # indirection avoids static-evaluation warning
+    if platform != "win32":
+        return None
+    return "light" if _windows_is_light() else "dark"
+
+
+def detect_theme() -> Theme:
+    """
+    Infer the terminal background theme from multiple sources, in priority order.
+
+    Detection chain:
+
+    1. **$GLAZE_THEME** — explicit user override. Accepts ``dark``, ``light``,
+       or ``auto`` (which continues down the chain). This is the escape hatch
+       for users whose terminal doesn't report its theme reliably.
+
+    2. **$COLORFGBG** — set by xterm, iTerm2, urxvt, and Konsole at terminal
+       startup. Format: ``fg;bg`` or ``fg;...;bg``. The last segment is the
+       background color index: index ≥ 7 means a light background.
+
+    3. **OSC 11 query** — sends ``ESC ] 11 ; ? ESC \\`` to the terminal and
+       reads the ``rgb:RRRR/GGGG/BBBB`` response. Supported by Ghostty, Kitty,
+       WezTerm, and most modern terminals. Skipped in tmux/screen sessions,
+       non-TTY environments, and when the response is pure black (known buggy
+       terminals). Uses a 100ms timeout to avoid hanging in hostile environments.
+
+    4. **$TERM_PROGRAM** — ``Apple_Terminal`` is almost always a light-background
+       terminal (macOS default). Used as a weak heuristic when OSC 11 is
+       unavailable.
+
+    5. **Windows console API** — on ``win32``, queries ``GetConsoleScreenBufferInfo``
+       via ctypes to read the background color attribute directly.
+
+    6. **Fallback → dark** — the safest default. Unknown terminals are more
+       likely to be dark than light, and dark-on-dark is less harmful than
+       light-on-light.
+
+    Returns:
+        ``'light'`` or ``'dark'`` — never ``'auto'``.
+    """
+    # 1. Explicit user override via environment variable
+    glaze_theme = os.environ.get("GLAZE_THEME", "").strip().lower()
+    if glaze_theme in ("dark", "light"):
+        return glaze_theme  # type: ignore[return-value]
+    # GLAZE_THEME=auto falls through to the detection chain below
+
+    # 2–5. Try each detector in priority order, return first match
+    detected = (
+        _detect_colorfgbg()
+        or _detect_osc11()
+        or _detect_term_program()
+        or _detect_windows()
+    )
+    return detected if detected is not None else "dark"
 
 
 def set_theme(theme: Theme) -> None:
