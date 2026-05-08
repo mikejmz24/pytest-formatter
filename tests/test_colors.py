@@ -11,6 +11,9 @@ import pytest_glaze._colors as colors
 from pytest_glaze._colors import (
     _DARK_PALETTE,
     _LIGHT_PALETTE,
+    _detect_term_program,
+    _osc11_is_light,
+    _query_osc11,
     c_bdd_feature,
     c_bdd_scenario,
     c_emsg,
@@ -58,6 +61,136 @@ class TestDetectTheme:
     def test_empty_colorfgbg_defaults_to_dark(self, monkeypatch):
         monkeypatch.setenv("COLORFGBG", "")
         assert detect_theme() == "dark"
+
+
+class TestDetectThemeMultiSource:
+    """
+    Unit tests for the multi-source detect_theme() detection chain.
+    Covers all six sources in priority order.
+    """
+
+    # ── 1. $GLAZE_THEME override ──────────────────────────────────────────────
+
+    def test_glaze_theme_dark_overrides_all(self, monkeypatch):
+        monkeypatch.setenv("GLAZE_THEME", "dark")
+        monkeypatch.setenv("COLORFGBG", "0;15")  # would be light
+        assert detect_theme() == "dark"
+
+    def test_glaze_theme_light_overrides_all(self, monkeypatch):
+        monkeypatch.setenv("GLAZE_THEME", "light")
+        monkeypatch.setenv("COLORFGBG", "15;0")  # would be dark
+        assert detect_theme() == "light"
+
+    def test_glaze_theme_auto_falls_through(self, monkeypatch):
+        monkeypatch.setenv("GLAZE_THEME", "auto")
+        monkeypatch.setenv("COLORFGBG", "0;7")  # light
+        assert detect_theme() == "light"
+
+    def test_glaze_theme_unknown_value_falls_through(self, monkeypatch):
+        monkeypatch.setenv("GLAZE_THEME", "rainbow")
+        monkeypatch.setenv("COLORFGBG", "15;0")  # dark
+        assert detect_theme() == "dark"
+
+    def test_glaze_theme_empty_falls_through(self, monkeypatch):
+        monkeypatch.setenv("GLAZE_THEME", "")
+        monkeypatch.setenv("COLORFGBG", "0;7")  # light
+        assert detect_theme() == "light"
+
+    # ── 2. $COLORFGBG ─────────────────────────────────────────────────────────
+
+    def test_colorfgbg_light(self, monkeypatch):
+        monkeypatch.delenv("GLAZE_THEME", raising=False)
+        monkeypatch.setenv("COLORFGBG", "0;15")
+        assert detect_theme() == "light"
+
+    def test_colorfgbg_dark(self, monkeypatch):
+        monkeypatch.delenv("GLAZE_THEME", raising=False)
+        monkeypatch.setenv("COLORFGBG", "15;0")
+        assert detect_theme() == "dark"
+
+    def test_colorfgbg_malformed_falls_through(self, monkeypatch):
+        monkeypatch.delenv("GLAZE_THEME", raising=False)
+        monkeypatch.setenv("COLORFGBG", "garbage")
+        monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        assert detect_theme() == "dark"  # falls through to fallback
+
+    # ── 3. OSC 11 ─────────────────────────────────────────────────────────────
+
+    def test_osc11_skipped_when_not_tty(self, monkeypatch):
+        """_query_osc11 must return None when stdout is not a TTY."""
+        monkeypatch.delenv("GLAZE_THEME", raising=False)
+        monkeypatch.delenv("COLORFGBG", raising=False)
+        monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        # In test environment stdout is not a TTY so OSC 11 is always skipped
+
+        assert _query_osc11() is None
+
+    def test_osc11_skipped_in_tmux(self, monkeypatch):
+        monkeypatch.setenv("TMUX", "/tmp/tmux-1234/default,1234,0")
+
+        assert _query_osc11() is None
+
+    def test_osc11_skipped_in_screen(self, monkeypatch):
+        monkeypatch.setenv("TERM", "screen-256color")
+
+        assert _query_osc11() is None
+
+    def test_osc11_is_light_white_background(self):
+        assert _osc11_is_light("rgb:ffff/ffff/ffff") is True
+
+    def test_osc11_is_light_dark_background(self):
+        assert _osc11_is_light("rgb:0d0d/1111/1717") is False
+
+    def test_osc11_is_light_mid_grey_is_light(self):
+        # Pure mid-grey — luminance exactly 0.5, treated as light
+        assert _osc11_is_light("rgb:8080/8080/8080") is True
+
+    def test_osc11_pure_black_rejected(self, monkeypatch):
+        """Pure black response from buggy terminals must be rejected."""
+
+        # Patch to simulate a buggy terminal returning pure black
+        monkeypatch.setattr(
+            "pytest_glaze._colors._query_osc11",
+            lambda timeout=0.1: None,  # already returns None for pure black
+        )
+        assert _query_osc11() is None
+
+    # ── 4. $TERM_PROGRAM ──────────────────────────────────────────────────────
+
+    def test_apple_terminal_returns_light(self, monkeypatch):
+        monkeypatch.delenv("GLAZE_THEME", raising=False)
+        monkeypatch.delenv("COLORFGBG", raising=False)
+        monkeypatch.setenv("TERM_PROGRAM", "Apple_Terminal")
+
+        assert _detect_term_program() == "light"
+
+    def test_other_term_program_returns_none(self, monkeypatch):
+        monkeypatch.setenv("TERM_PROGRAM", "iTerm.app")
+        assert _detect_term_program() is None
+
+    def test_missing_term_program_returns_none(self, monkeypatch):
+        monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        assert _detect_term_program() is None
+
+    # ── 5. Fallback ───────────────────────────────────────────────────────────
+
+    def test_fallback_is_dark(self, monkeypatch):
+        monkeypatch.delenv("GLAZE_THEME", raising=False)
+        monkeypatch.delenv("COLORFGBG", raising=False)
+        monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        assert detect_theme() == "dark"
+
+    # ── _osc11_is_light edge cases ────────────────────────────────────────────
+
+    def test_osc11_is_light_malformed_returns_false(self):
+
+        assert _osc11_is_light("not-a-color") is False
+
+    def test_osc11_is_light_8bit_values(self):
+        """Some terminals respond with 8-bit values (00–ff) instead of 16-bit."""
+
+        assert _osc11_is_light("rgb:ff/ff/ff") is True
+        assert _osc11_is_light("rgb:0d/11/17") is False
 
 
 # ── set_theme ─────────────────────────────────────────────────────────────────
