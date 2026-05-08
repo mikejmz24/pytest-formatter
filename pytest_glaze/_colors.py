@@ -46,18 +46,18 @@ _DARK_PALETTE: Dict[str, str] = {
 }
 
 _LIGHT_PALETTE: Dict[str, str] = {
-    "pass": "32",  # standard green
-    "fail": "31",  # standard red
-    "error": "0;38;2;160;0;0",  # dark red
-    "skip": "33",  # amber
-    "xfail": "31",  # standard red
-    "xpass": "33",  # amber
-    "emsg": "0;38;2;160;70;0",  # rust
-    "section": "90",  # gray (unchanged)
-    "dim": "2",
-    "bold": "1",
-    "bdd_feature": "34",  # dark blue
-    "bdd_scenario": "0;38;2;0;100;190",  # medium blue
+    "pass": "0;38;2;180;0;100",
+    "fail": "0;38;2;180;0;100",
+    "error": "0;38;2;180;0;100",
+    "skip": "0;38;2;180;0;100",
+    "xfail": "0;38;2;180;0;100",
+    "xpass": "0;38;2;180;0;100",
+    "emsg": "0;38;2;180;0;100",
+    "section": "0;38;2;180;0;100",
+    "dim": "0;38;2;180;0;100",
+    "bold": "0;38;2;180;0;100",
+    "bdd_feature": "0;38;2;180;0;100",
+    "bdd_scenario": "0;38;2;180;0;100",
 }
 
 _active_palette: Dict[str, str] = _DARK_PALETTE
@@ -100,6 +100,17 @@ def reset_theme() -> None:
     """Reset the active palette to the default (dark). For use in tests."""
     global _active_palette  # pylint: disable=global-statement
     _active_palette = _DARK_PALETTE
+
+
+def get_active_palette() -> Dict[str, str]:
+    """Return the currently active palette. For use in tests."""
+    return _active_palette
+
+
+def set_active_palette(palette: Dict[str, str]) -> None:
+    """Set the active palette directly. For use in tests."""
+    global _active_palette  # pylint: disable=global-statement
+    _active_palette = palette
 
 
 # ── Escape helper ─────────────────────────────────────────────────────────────
@@ -236,4 +247,6 @@ __all__ = [
     "_OUTCOME_ORDER",
     "_OUTCOME_COLOR",
     "_SUMMARY_FMT",
+    "get_active_palette",
+    "set_active_palette",
 ]
