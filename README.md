@@ -213,21 +213,36 @@ pytest-glaze ships with dark and light color palettes. The active theme
 is selected via `--glaze-theme`:
 
 ```bash
-pytest --glaze --glaze-theme=dark tests/    # explicit dark (default)
+pytest --glaze --glaze-theme=dark tests/    # explicit dark
 pytest --glaze --glaze-theme=light tests/   # explicit light
 pytest --glaze --glaze-theme=auto tests/    # auto-detect (default)
 ```
 
-With `auto` (the default), pytest-glaze reads the `$COLORFGBG` environment
-variable set by your terminal emulator at startup. A background index ≥ 7
-is treated as a light terminal; anything below is treated as dark. If
-`$COLORFGBG` is not set (Ghostty, WezTerm, VS Code integrated terminal),
-the formatter falls back to dark.
+With `auto` (the default), pytest-glaze detects your terminal background
+through a chain of sources — first match wins:
 
-To always use a specific theme, add it to your pytest configuration:
+| Priority | Source                 | Details                                                                                                                                           |
+| -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | `$GLAZE_THEME` env var | Set to `dark`, `light`, or `auto` — highest priority, overrides everything                                                                        |
+| 2        | `$COLORFGBG`           | Set by xterm, iTerm2, urxvt, Konsole at terminal startup                                                                                          |
+| 3        | OSC 11 query           | Queries terminal directly — supports Ghostty, Kitty, WezTerm, and most modern terminals. Skipped in tmux/screen sessions and non-TTY environments |
+| 4        | `$TERM_PROGRAM`        | `Apple_Terminal` is treated as light (macOS default)                                                                                              |
+| 5        | Windows console API    | Reads background color via `ctypes` on Windows                                                                                                    |
+| 6        | Fallback               | Defaults to dark — the safer choice for unknown terminals                                                                                         |
+
+**Environment variable override:**
+
+```bash
+# Force light theme regardless of terminal settings
+GLAZE_THEME=light pytest --glaze tests/
+
+# Or add to your shell profile for always-on
+export GLAZE_THEME=light
+```
+
+**Always-on via `pyproject.toml`:**
 
 ```toml
-# pyproject.toml
 [tool.pytest.ini_options]
 addopts = "--glaze --glaze-theme=light"
 ```
