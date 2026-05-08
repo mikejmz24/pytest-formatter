@@ -71,81 +71,98 @@ _active_palette: Dict[str, str] = _DARK_PALETTE
 # ── Theme helpers ─────────────────────────────────────────────────────────────
 
 
+def _osc11_safe_to_query() -> bool:
+    """
+    Return True only when an OSC 11 terminal query is safe to attempt.
+
+    Checks all conditions that would make the query unsafe or pointless:
+      - Windows: handled separately via ctypes
+      - $TMUX set: tmux intercepts but does not forward OSC 11
+      - $TERM starts with 'screen': screen multiplexer, same issue as tmux
+      - /dev/tty not openable: headless CI, Docker, no controlling terminal
+    """
+    platform = sys.platform  # indirection avoids static-evaluation warning
+    if platform == "win32":
+        return False
+    if bool(os.environ.get("TMUX")) or os.environ.get("TERM", "").startswith("screen"):
+        return False
+    try:
+        fd = os.open("/dev/tty", os.O_RDWR)
+        os.close(fd)
+        return True
+    except OSError:
+        return False
+
+
 def _query_osc11(timeout: float = 0.1) -> Optional[str]:
     """
     Query the terminal background color via OSC 11 escape sequence.
 
     OSC 11 is the standard xterm protocol for querying the terminal background
-    color. We write ``\\033]11;?\\033\\\\`` to stdout and read the response from
-    stdin. The response format is::
+    color. We open ``/dev/tty`` directly — this gives us access to the actual
+    terminal even when stdin/stdout are piped (e.g. through make, CI scripts,
+    or output redirection). This is the same approach used by bat, fzf, and
+    other terminal-aware tools.
 
-        \\033]11;rgb:RRRR/GGGG/BBBB\\033\\\\
-
-    Where RRRR/GGGG/BBBB are 16-bit hex values (0000–ffff).
+    We write ``\\033]11;?\\033\\\\`` and read the ``rgb:RRRR/GGGG/BBBB`` response.
 
     Safety gates — returns None immediately if any of these are true:
-      - stdout or stdin is not a TTY (piped, redirected, CI environment)
-      - $TMUX is set (tmux does not support OSC 11 and would swallow the query)
-      - $TERM starts with "screen" (screen multiplexer, same issue as tmux)
+      - ``/dev/tty`` cannot be opened (non-interactive, headless CI)
       - Platform is Windows (handled separately via ctypes)
-      - The response is pure black rgb:0000/0000/0000 (known buggy terminals
-        such as zellij and tabby always report black regardless of actual theme)
+      - $TMUX is set (tmux does not support OSC 11)
+      - $TERM starts with "screen" (screen multiplexer, same issue)
+      - Response is pure black rgb:0000/0000/0000 (buggy terminals like
+        zellij and tabby always report black regardless of actual theme)
 
     Returns the raw rgb string (e.g. ``'rgb:ffff/ffff/ffff'``) or None if
     the query failed, timed out, or was skipped for safety.
     """
 
-    # Consolidated safety gate — skip if any unsafe condition is met
-    unsafe = (
-        not sys.stdin.isatty()
-        or not sys.stdout.isatty()
-        or bool(os.environ.get("TMUX"))
-        or os.environ.get("TERM", "").startswith("screen")
-        or sys.platform == "win32"
-    )
-    if unsafe:
+    if not _osc11_safe_to_query():
         return None
 
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
     try:
-        tty.setraw(fd)
-        # Write OSC 11 query: ESC ] 11 ; ? ESC backslash
-        sys.stdout.write("\033]11;?\033\\")
-        sys.stdout.flush()
-        # Wait for response with timeout
-        ready, _, _ = select.select([sys.stdin], [], [], timeout)
-        if not ready:
-            return None
-        response = ""
-        while True:
-            ready, _, _ = select.select([sys.stdin], [], [], 0.05)
+        tty_fd = os.open("/dev/tty", os.O_RDWR)
+    except OSError:
+        return None
+
+    try:
+        old_settings = termios.tcgetattr(tty_fd)
+        try:
+            tty.setraw(tty_fd)
+            os.write(tty_fd, b"\033]11;?\033\\")
+            ready, _, _ = select.select([tty_fd], [], [], timeout)
             if not ready:
-                break
-            ch = sys.stdin.read(1)
-            response += ch
-            # Response ends with ST (ESC \) or BEL
-            if response.endswith("\033\\") or response.endswith("\007"):
-                break
+                return None
+            response = b""
+            while True:
+                ready, _, _ = select.select([tty_fd], [], [], 0.05)
+                if not ready:
+                    break
+                chunk = os.read(tty_fd, 64)
+                if not chunk:
+                    break
+                response += chunk
+                if response.endswith(b"\033\\") or response.endswith(b"\007"):
+                    break
+        finally:
+            termios.tcsetattr(tty_fd, termios.TCSADRAIN, old_settings)
     except Exception:  # pylint: disable=broad-except
         return None
     finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        os.close(tty_fd)
 
-    # Extract rgb:RRRR/GGGG/BBBB from response
-    match = re.search(r"rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+)", response)
+    text = response.decode("ascii", errors="ignore")
+    match = re.search(r"rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+)", text)
     if not match:
         return None
-    rgb = match.group(0)
-    # Reject pure black — known buggy terminals (zellij, tabby) always report
-    # rgb:0000/0000/0000 regardless of actual background color
     if (
         match.group(1) == "0000"
         and match.group(2) == "0000"
         and match.group(3) == "0000"
     ):
         return None
-    return rgb
+    return match.group(0)
 
 
 def _osc11_is_light(rgb: str) -> bool:
@@ -272,16 +289,50 @@ def _detect_osc11() -> Optional[Theme]:
 
 def _detect_term_program() -> Optional[Theme]:
     """
-    Detect theme from $TERM_PROGRAM.
+    Detect theme from terminal-specific environment variables.
 
-    Apple Terminal is almost always configured with a light background on
-    macOS (the system default). Used as a weak heuristic when OSC 11 is
-    unavailable.
+    Checks multiple environment variables set by specific terminal emulators
+    at startup. Each terminal has its own convention for signaling its theme:
 
-    Returns 'light' for Apple_Terminal, None for everything else.
+    - ``$TERM_PROGRAM=Apple_Terminal`` — macOS Terminal.app, almost always
+      configured with a light background (system default).
+
+    - ``$TERM_PROGRAM=vscode`` — VS Code integrated terminal. VS Code sets
+      ``$VSCODE_THEME_KIND`` to ``'vscode-light'``, ``'vscode-dark'``, or
+      ``'vscode-high-contrast'`` allowing precise detection.
+
+    - ``$TERMINAL_EMULATOR=JetBrains-JediTerm`` — JetBrains IDEs (IntelliJ,
+      PyCharm, GoLand, etc.). JetBrains sets ``$TERMINAL_BACKGROUND`` to
+      ``'light'`` or ``'dark'`` for precise detection.
+
+    Returns ``'light'``, ``'dark'``, or ``None`` if no match found.
     """
-    if os.environ.get("TERM_PROGRAM") == "Apple_Terminal":
+    term_program = os.environ.get("TERM_PROGRAM", "")
+
+    # Apple Terminal — almost always light on macOS (system default)
+    if term_program == "Apple_Terminal":
         return "light"
+
+    # VS Code — reads $VSCODE_THEME_KIND for precise detection
+    if term_program == "vscode":
+        vscode_theme = os.environ.get("VSCODE_THEME_KIND", "").lower()
+        if "light" in vscode_theme:
+            return "light"
+        if "dark" in vscode_theme or "high-contrast" in vscode_theme:
+            return "dark"
+        # $VSCODE_THEME_KIND absent — fall through to next detector
+        return None
+
+    # JetBrains IDEs — reads $TERMINAL_BACKGROUND for precise detection
+    if os.environ.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":
+        jetbrains_bg = os.environ.get("TERMINAL_BACKGROUND", "").lower()
+        if jetbrains_bg == "light":
+            return "light"
+        if jetbrains_bg == "dark":
+            return "dark"
+        # $TERMINAL_BACKGROUND absent — fall through to next detector
+        return None
+
     return None
 
 

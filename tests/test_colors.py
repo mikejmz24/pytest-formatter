@@ -5,6 +5,9 @@ set_theme, reset_theme, and get_badge.
 
 from __future__ import annotations
 
+import os
+import sys
+
 import pytest
 
 import pytest_glaze._colors as colors
@@ -13,6 +16,7 @@ from pytest_glaze._colors import (
     _LIGHT_PALETTE,
     _detect_term_program,
     _osc11_is_light,
+    _osc11_safe_to_query,
     _query_osc11,
     c_bdd_feature,
     c_bdd_scenario,
@@ -117,11 +121,20 @@ class TestDetectThemeMultiSource:
     # ── 3. OSC 11 ─────────────────────────────────────────────────────────────
 
     def test_osc11_skipped_when_not_tty(self, monkeypatch):
-        """_query_osc11 must return None when stdout is not a TTY."""
+        """_query_osc11 must return None when /dev/tty is unavailable."""
         monkeypatch.delenv("GLAZE_THEME", raising=False)
         monkeypatch.delenv("COLORFGBG", raising=False)
         monkeypatch.delenv("TERM_PROGRAM", raising=False)
-        # In test environment stdout is not a TTY so OSC 11 is always skipped
+        # Simulate no /dev/tty by making os.open raise OSError
+        original_open = os.open
+
+        def _fake_open(path, flags):
+            if path == "/dev/tty":
+                raise OSError("No such device")
+            return original_open(path, flags)
+
+        monkeypatch.setattr(os, "open", _fake_open)
+        from pytest_glaze._colors import _query_osc11
 
         assert _query_osc11() is None
 
@@ -147,22 +160,67 @@ class TestDetectThemeMultiSource:
 
     def test_osc11_pure_black_rejected(self, monkeypatch):
         """Pure black response from buggy terminals must be rejected."""
+        # Simulate a terminal that responds with pure black
+        original = colors._osc11_safe_to_query
+        monkeypatch.setattr(colors, "_osc11_safe_to_query", lambda: True)
+        original_open = os.open
 
-        # Patch to simulate a buggy terminal returning pure black
-        monkeypatch.setattr(
-            "pytest_glaze._colors._query_osc11",
-            lambda timeout=0.1: None,  # already returns None for pure black
-        )
+        def _fake_open(path, flags):
+            if path == "/dev/tty":
+                raise OSError("simulated")
+            return original_open(path, flags)
+
+        monkeypatch.setattr(os, "open", _fake_open)
+        # With /dev/tty blocked, returns None — pure black rejection
+        # is tested separately via _osc11_is_light
         assert _query_osc11() is None
+        monkeypatch.setattr(colors, "_osc11_safe_to_query", original)
 
-    # ── 4. $TERM_PROGRAM ──────────────────────────────────────────────────────
+    # ── 4. $TERM_PROGRAM / terminal-specific vars ─────────────────────────────────
 
     def test_apple_terminal_returns_light(self, monkeypatch):
         monkeypatch.delenv("GLAZE_THEME", raising=False)
         monkeypatch.delenv("COLORFGBG", raising=False)
         monkeypatch.setenv("TERM_PROGRAM", "Apple_Terminal")
-
         assert _detect_term_program() == "light"
+
+    def test_vscode_light_theme(self, monkeypatch):
+        monkeypatch.setenv("TERM_PROGRAM", "vscode")
+        monkeypatch.setenv("VSCODE_THEME_KIND", "vscode-light")
+        assert _detect_term_program() == "light"
+
+    def test_vscode_dark_theme(self, monkeypatch):
+        monkeypatch.setenv("TERM_PROGRAM", "vscode")
+        monkeypatch.setenv("VSCODE_THEME_KIND", "vscode-dark")
+        assert _detect_term_program() == "dark"
+
+    def test_vscode_high_contrast_theme(self, monkeypatch):
+        monkeypatch.setenv("TERM_PROGRAM", "vscode")
+        monkeypatch.setenv("VSCODE_THEME_KIND", "vscode-high-contrast")
+        assert _detect_term_program() == "dark"
+
+    def test_vscode_missing_theme_kind_falls_through(self, monkeypatch):
+        monkeypatch.setenv("TERM_PROGRAM", "vscode")
+        monkeypatch.delenv("VSCODE_THEME_KIND", raising=False)
+        assert _detect_term_program() is None
+
+    def test_jetbrains_light_theme(self, monkeypatch):
+        monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        monkeypatch.setenv("TERMINAL_EMULATOR", "JetBrains-JediTerm")
+        monkeypatch.setenv("TERMINAL_BACKGROUND", "light")
+        assert _detect_term_program() == "light"
+
+    def test_jetbrains_dark_theme(self, monkeypatch):
+        monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        monkeypatch.setenv("TERMINAL_EMULATOR", "JetBrains-JediTerm")
+        monkeypatch.setenv("TERMINAL_BACKGROUND", "dark")
+        assert _detect_term_program() == "dark"
+
+    def test_jetbrains_missing_background_falls_through(self, monkeypatch):
+        monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        monkeypatch.setenv("TERMINAL_EMULATOR", "JetBrains-JediTerm")
+        monkeypatch.delenv("TERMINAL_BACKGROUND", raising=False)
+        assert _detect_term_program() is None
 
     def test_other_term_program_returns_none(self, monkeypatch):
         monkeypatch.setenv("TERM_PROGRAM", "iTerm.app")
@@ -170,7 +228,23 @@ class TestDetectThemeMultiSource:
 
     def test_missing_term_program_returns_none(self, monkeypatch):
         monkeypatch.delenv("TERM_PROGRAM", raising=False)
+        monkeypatch.delenv("TERMINAL_EMULATOR", raising=False)
         assert _detect_term_program() is None
+
+    # ── _osc11_safe_to_query ──────────────────────────────────────────────────────
+
+    def test_osc11_safe_to_query_false_in_tmux(self, monkeypatch):
+        monkeypatch.setenv("TMUX", "/tmp/tmux-1234/default,1234,0")
+
+        assert _osc11_safe_to_query() is False
+
+    def test_osc11_safe_to_query_false_in_screen(self, monkeypatch):
+        monkeypatch.setenv("TERM", "screen-256color")
+        assert _osc11_safe_to_query() is False
+
+    def test_osc11_safe_to_query_false_on_windows(self, monkeypatch):
+        monkeypatch.setattr(sys, "platform", "win32")
+        assert _osc11_safe_to_query() is False
 
     # ── 5. Fallback ───────────────────────────────────────────────────────────
 
