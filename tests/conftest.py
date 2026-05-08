@@ -4,7 +4,7 @@
 import pytest
 
 from pytest_glaze import _colors
-from pytest_glaze._colors import get_active_palette, set_active_palette
+from pytest_glaze._colors import _DARK_PALETTE, get_active_palette, set_active_palette
 
 
 @pytest.fixture(autouse=True)
@@ -13,10 +13,23 @@ def force_color(monkeypatch):
     monkeypatch.setattr(_colors, "_NO_COLOR", False)
 
 
+# @pytest.fixture(scope="session", autouse=True)
+# def configured_palette():
+#     """Capture the palette configured at session start (respects --glaze-theme)."""
+#     return get_active_palette()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def configured_palette():
     """Capture the palette configured at session start (respects --glaze-theme)."""
-    return get_active_palette()
+    palette = get_active_palette()
+    import sys
+
+    print(
+        f"\nDEBUG configured_palette={'DARK' if palette is _DARK_PALETTE else 'LIGHT'}",
+        file=sys.stderr,
+    )
+    return palette
 
 
 @pytest.fixture(autouse=True)
