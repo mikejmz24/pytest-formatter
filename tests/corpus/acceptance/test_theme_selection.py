@@ -8,8 +8,13 @@ from __future__ import annotations
 import pytest
 from pytest_bdd import given, parsers, scenario, then, when
 
-import pytest_glaze._colors as colors
-from pytest_glaze._colors import _DARK_PALETTE, _LIGHT_PALETTE, set_theme
+from pytest_glaze._colors import (
+    _DARK_PALETTE,
+    _LIGHT_PALETTE,
+    get_active_palette,
+    set_active_palette,
+    set_theme,
+)
 
 # ── Scenarios ─────────────────────────────────────────────────────────────────
 
@@ -60,7 +65,7 @@ def test_malformed_colorfgbg_dark(): ...
 
 
 @pytest.fixture
-def theme_context() -> dict:
+def theme_config() -> dict:
     return {"theme_flag": "auto"}
 
 
@@ -72,14 +77,14 @@ def colorfgbg_set(monkeypatch, value: str) -> None:
     monkeypatch.setenv("COLORFGBG", value)
 
 
-@given("the --glaze-theme flag is not provided", target_fixture="theme_context")
+@given("the --glaze-theme flag is not provided", target_fixture="theme_config")
 def no_theme_flag() -> dict:
     return {"theme_flag": "auto"}
 
 
 @given(
     parsers.parse('the --glaze-theme flag is set to "{value}"'),
-    target_fixture="theme_context",
+    target_fixture="theme_config",
 )
 def theme_flag_set(value: str) -> dict:
     return {"theme_flag": value}
@@ -88,19 +93,23 @@ def theme_flag_set(value: str) -> dict:
 # ── When ──────────────────────────────────────────────────────────────────────
 
 
-@when("pytest-glaze is configured")
-def glaze_configured(theme_context: dict) -> None:
-    set_theme(theme_context["theme_flag"])
+@when("pytest-glaze is configured", target_fixture="resolved_palette")
+def glaze_configured(theme_config: dict) -> dict:
+    previous = get_active_palette()
+    set_theme(theme_config["theme_flag"])
+    palette = get_active_palette()
+    set_active_palette(previous)
+    return palette
 
 
 # ── Then ──────────────────────────────────────────────────────────────────────
 
 
 @then("the dark color palette is active")
-def dark_palette_active() -> None:
-    assert colors._active_palette is _DARK_PALETTE  # pylint: disable=protected-access
+def dark_palette_active(resolved_palette) -> None:
+    assert resolved_palette is _DARK_PALETTE
 
 
 @then("the light color palette is active")
-def light_palette_active() -> None:
-    assert colors._active_palette is _LIGHT_PALETTE  # pylint: disable=protected-access
+def light_palette_active(resolved_palette) -> None:
+    assert resolved_palette is _LIGHT_PALETTE
