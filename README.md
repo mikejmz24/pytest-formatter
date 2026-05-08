@@ -221,14 +221,14 @@ pytest --glaze --glaze-theme=auto tests/    # auto-detect (default)
 With `auto` (the default), pytest-glaze detects your terminal background
 through a chain of sources — first match wins:
 
-| Priority | Source                 | Details                                                                                                                                           |
-| -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1        | `$GLAZE_THEME` env var | Set to `dark`, `light`, or `auto` — highest priority, overrides everything                                                                        |
-| 2        | `$COLORFGBG`           | Set by xterm, iTerm2, urxvt, Konsole at terminal startup                                                                                          |
-| 3        | OSC 11 query           | Queries terminal directly — supports Ghostty, Kitty, WezTerm, and most modern terminals. Skipped in tmux/screen sessions and non-TTY environments |
-| 4        | `$TERM_PROGRAM`        | `Apple_Terminal` is treated as light (macOS default)                                                                                              |
-| 5        | Windows console API    | Reads background color via `ctypes` on Windows                                                                                                    |
-| 6        | Fallback               | Defaults to dark — the safer choice for unknown terminals                                                                                         |
+| Priority | Source                                 | Details                                                                                                                                                                                            |
+| -------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | `$GLAZE_THEME` env var                 | Set to `dark`, `light`, or `auto` — highest priority, overrides everything                                                                                                                         |
+| 2        | `$COLORFGBG`                           | Set by xterm, iTerm2, urxvt, Konsole at terminal startup                                                                                                                                           |
+| 3        | OSC 11 query                           | Queries terminal directly via `/dev/tty` — works even when stdout is piped through `make` or scripts. Supports Ghostty, Kitty, WezTerm, and most modern terminals. Skipped in tmux/screen sessions |
+| 4        | `$TERM_PROGRAM` / `$TERMINAL_EMULATOR` | `Apple_Terminal` → light; `vscode` → reads `$VSCODE_THEME_KIND`; `JetBrains-JediTerm` → reads `$TERMINAL_BACKGROUND`                                                                               |
+| 5        | Windows console API                    | Reads background color via `ctypes` on Windows                                                                                                                                                     |
+| 6        | Fallback                               | Defaults to dark — the safer choice for unknown terminals                                                                                                                                          |
 
 **Environment variable override:**
 
