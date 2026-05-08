@@ -94,6 +94,33 @@ def _osc11_safe_to_query() -> bool:
         return False
 
 
+def _read_osc11_response(tty_fd: int, timeout: float) -> Optional[bytes]:
+    """
+    Read the OSC 11 response from the terminal file descriptor.
+
+    Reads chunks until ST (ESC \\) or BEL terminator is found, or until
+    the inter-chunk timeout expires. Returns raw bytes or None on failure.
+    """
+    response = b""
+    ready, _, _ = select.select([tty_fd], [], [], timeout)
+    if not ready:
+        return None
+    try:
+        while True:
+            ready, _, _ = select.select([tty_fd], [], [], 0.05)
+            if not ready:
+                break
+            chunk = os.read(tty_fd, 64)
+            if not chunk:
+                break
+            response += chunk
+            if response.endswith(b"\033\\") or response.endswith(b"\007"):
+                break
+    except OSError:
+        return None
+    return response or None
+
+
 def _query_osc11(timeout: float = 0.1) -> Optional[str]:
     """
     Query the terminal background color via OSC 11 escape sequence.
@@ -117,7 +144,6 @@ def _query_osc11(timeout: float = 0.1) -> Optional[str]:
     Returns the raw rgb string (e.g. ``'rgb:ffff/ffff/ffff'``) or None if
     the query failed, timed out, or was skipped for safety.
     """
-
     if not _osc11_safe_to_query():
         return None
 
@@ -126,32 +152,22 @@ def _query_osc11(timeout: float = 0.1) -> Optional[str]:
     except OSError:
         return None
 
+    response = None
     try:
         old_settings = termios.tcgetattr(tty_fd)
         try:
             tty.setraw(tty_fd)
             os.write(tty_fd, b"\033]11;?\033\\")
-            ready, _, _ = select.select([tty_fd], [], [], timeout)
-            if not ready:
-                return None
-            response = b""
-            while True:
-                ready, _, _ = select.select([tty_fd], [], [], 0.05)
-                if not ready:
-                    break
-                chunk = os.read(tty_fd, 64)
-                if not chunk:
-                    break
-                response += chunk
-                if response.endswith(b"\033\\") or response.endswith(b"\007"):
-                    break
+            response = _read_osc11_response(tty_fd, timeout)
         finally:
             termios.tcsetattr(tty_fd, termios.TCSADRAIN, old_settings)
     except Exception:  # pylint: disable=broad-except
-        return None
+        response = None
     finally:
         os.close(tty_fd)
 
+    if not response:
+        return None
     text = response.decode("ascii", errors="ignore")
     match = re.search(r"rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+)", text)
     if not match:
@@ -308,32 +324,26 @@ def _detect_term_program() -> Optional[Theme]:
     Returns ``'light'``, ``'dark'``, or ``None`` if no match found.
     """
     term_program = os.environ.get("TERM_PROGRAM", "")
+    result: Optional[Theme] = None
 
-    # Apple Terminal — almost always light on macOS (system default)
     if term_program == "Apple_Terminal":
-        return "light"
+        result = "light"
 
-    # VS Code — reads $VSCODE_THEME_KIND for precise detection
-    if term_program == "vscode":
+    elif term_program == "vscode":
         vscode_theme = os.environ.get("VSCODE_THEME_KIND", "").lower()
         if "light" in vscode_theme:
-            return "light"
-        if "dark" in vscode_theme or "high-contrast" in vscode_theme:
-            return "dark"
-        # $VSCODE_THEME_KIND absent — fall through to next detector
-        return None
+            result = "light"
+        elif "dark" in vscode_theme or "high-contrast" in vscode_theme:
+            result = "dark"
 
-    # JetBrains IDEs — reads $TERMINAL_BACKGROUND for precise detection
-    if os.environ.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":
+    elif os.environ.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":
         jetbrains_bg = os.environ.get("TERMINAL_BACKGROUND", "").lower()
         if jetbrains_bg == "light":
-            return "light"
-        if jetbrains_bg == "dark":
-            return "dark"
-        # $TERMINAL_BACKGROUND absent — fall through to next detector
-        return None
+            result = "light"
+        elif jetbrains_bg == "dark":
+            result = "dark"
 
-    return None
+    return result
 
 
 def _detect_windows() -> Optional[Theme]:
