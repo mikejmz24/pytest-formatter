@@ -18,7 +18,7 @@ from pytest_glaze._colors import (
     c_pass,
     detect_theme,
     get_badge,
-    set_theme,
+    no_color_context,
     theme_context,
 )
 
@@ -109,10 +109,11 @@ class TestColorFunctionsPaletteAware:
     """Color functions must read _active_palette at call time, not import time."""
 
     def test_c_pass_changes_with_theme(self):
-        if colors._NO_COLOR:
-            pytest.skip("NO_COLOR active")
         with theme_context("dark"):
-            assert c_pass("X") != (set_theme("light") or c_pass("X"))
+            dark = c_pass("X")
+        with theme_context("light"):
+            light = c_pass("X")
+        assert dark != light
 
     def test_c_fail_changes_with_theme(self):
         if colors._NO_COLOR:
@@ -146,11 +147,11 @@ class TestColorFunctionsPaletteAware:
             with theme_context("light"):
                 assert dark != c_bdd_scenario("X")
 
-    def test_no_color_mode_unaffected_by_theme(self, monkeypatch):
+    def test_no_color_mode_unaffected_by_theme(self):
         """In NO_COLOR mode, set_theme must not cause errors."""
-        monkeypatch.setattr(colors, "_NO_COLOR", True)
-        with theme_context("light"):
-            assert c_pass("X") == "X"
+        with no_color_context():
+            with theme_context("light"):
+                assert c_pass("X") == "X"
             with theme_context("dark"):
                 assert c_pass("X") == "X"
 
@@ -195,30 +196,22 @@ class TestPaletteStability:
     """
 
     def test_palette_stays_light_across_multiple_renders(self):
-        if colors._NO_COLOR:
-            pytest.skip("NO_COLOR active")
         with theme_context("light"):
             results = [c_pass("PASS") for _ in range(5)]
-            assert (
-                len(set(results)) == 1
-            ), "c_pass() returned different values across calls — palette changed mid-run"
+        assert (
+            len(set(results)) == 1
+        ), "c_pass() returned different values across calls — palette changed mid-run"
 
     def test_palette_stays_dark_across_multiple_renders(self):
-        if colors._NO_COLOR:
-            pytest.skip("NO_COLOR active")
         with theme_context("dark"):
             results = [c_pass("PASS") for _ in range(5)]
-            assert (
-                len(set(results)) == 1
-            ), "c_pass() returned different values across calls — palette changed mid-run"
+        assert (
+            len(set(results)) == 1
+        ), "c_pass() returned different values across calls — palette changed mid-run"
 
     def test_reset_palette_fixture_respects_active_theme(self):
-        """reset_palette must restore to whatever was active, not blindly reset to dark."""
-        if colors._NO_COLOR:
-            pytest.skip("NO_COLOR active")
+        """restore_palette must restore to whatever was active, not blindly reset to dark."""
         with theme_context("light"):
             before = c_pass("X")
-            # Simulate what reset_palette does — capture and restore
-            saved = colors._active_palette
-            colors._active_palette = saved
+        with theme_context("light"):
             assert c_pass("X") == before

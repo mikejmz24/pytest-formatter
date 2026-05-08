@@ -138,8 +138,9 @@ def pytest_configure(config: pytest.Config) -> None:
     if existing is None:
         plugin = FormatterPlugin()
         plugin.bdd.steps_mode = config.getoption("--bdd-steps", default=False)
-        theme = config.getoption("--glaze-theme", default="auto")
-        set_theme(theme)
+        if _GLAZE_PLUGIN is None:  # only set theme in parent session
+            theme = config.getoption("--glaze-theme", default="auto")
+            set_theme(theme)
         config.pluginmanager.register(plugin, _plugin_key)
     else:
         plugin = existing

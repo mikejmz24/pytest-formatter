@@ -115,6 +115,18 @@ def theme_context(theme: Theme):
         _active_palette = previous
 
 
+@contextmanager
+def no_color_context():
+    """Context manager that forces NO_COLOR=True and restores on exit. For use in tests."""
+    global _NO_COLOR  # pylint: disable=global-statement
+    previous = _NO_COLOR
+    _NO_COLOR = True
+    try:
+        yield
+    finally:
+        _NO_COLOR = previous
+
+
 def get_active_palette() -> Dict[str, str]:
     """Return the currently active palette. For use in tests."""
     return _active_palette
@@ -263,4 +275,5 @@ __all__ = [
     "get_active_palette",
     "set_active_palette",
     "theme_context",
+    "no_color_context",
 ]
