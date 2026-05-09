@@ -4,7 +4,6 @@ pytest_glaze/_formatter.py — FormatterPlugin: the core pytest output formatter
 Depends on _types, _colors, and _colorizer. No direct dependency on _hooks.
 """
 
-import re
 import sys
 import time
 from collections import Counter
@@ -315,7 +314,7 @@ class FormatterPlugin(_FormatterTestingMixin):
                 badge = get_badge(outcome)
                 color_fn = _OUTCOME_COLOR.get(outcome, c_dim)
                 dur = c_dim(f"  {total_dur * 1000:.1f}ms")
-                plain = re.sub(r"\033\[[\d;]*m", "", scenario_line).strip()
+                plain = LineColorizer.strip_ansi(scenario_line).strip()
                 self._p(f"    {color_fn('---')} {badge}  {color_fn(plain)}{dur}")
         else:
             for item in self.bdd.scenario_buf:
