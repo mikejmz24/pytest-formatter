@@ -75,7 +75,7 @@ class FormatterPlugin(_FormatterTestingMixin):
         return report.outcome  # type: ignore[return-value]
 
     @staticmethod
-    def extract_short(report, outcome: str) -> Optional[str]:
+    def extract_short(report, outcome: Outcome) -> Optional[str]:
         """
         Extract the most useful inline message for the E line.
 
@@ -251,7 +251,6 @@ class FormatterPlugin(_FormatterTestingMixin):
                     self._p()
                 self._p(f"  {LineColorizer.sanitize(class_name)}")
                 self._cur_class = class_name
-            # display_name = method_name
             display_name = LineColorizer.sanitize(method_name)
         else:
             self._cur_class = None
@@ -278,7 +277,7 @@ class FormatterPlugin(_FormatterTestingMixin):
                 for ln in content.rstrip().splitlines():
                     self._p(f"    {LineColorizer.sanitize(ln)}")
 
-    def _bdd_flush_scenario(self, outcome: str, short_msg: Optional[str]) -> None:
+    def _bdd_flush_scenario(self, outcome: Outcome, short_msg: Optional[str]) -> None:
         """
         Flush the buffered scenario lines, applying xfail/xpass correction
         to the last step before printing.
