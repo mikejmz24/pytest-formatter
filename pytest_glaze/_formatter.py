@@ -133,7 +133,7 @@ class FormatterPlugin(_FormatterTestingMixin):
         self._cur_file = file
         self._file_buf = []
         self._cur_class = None
-        self._p(file)
+        self._p(LineColorizer.sanitize(file))
 
     def _flush_file_summary(self) -> None:
         """Print the per-file '=> N passed, N failed' summary line."""
