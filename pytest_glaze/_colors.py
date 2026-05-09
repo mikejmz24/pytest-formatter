@@ -16,9 +16,10 @@ import sys
 import termios
 import tty
 from contextlib import contextmanager
-from typing import Callable, Dict, Optional
+from types import MappingProxyType
+from typing import Callable, Dict, Mapping, Optional, Tuple
 
-from pytest_glaze._types import Theme
+from pytest_glaze._types import Outcome, Theme
 
 
 def _should_disable_color() -> bool:
@@ -36,37 +37,41 @@ _NO_COLOR = _should_disable_color()
 
 # ── Palettes ──────────────────────────────────────────────────────────────────
 
-_DARK_PALETTE: Dict[str, str] = {
-    "pass": "92",  # bright green
-    "fail": "91",  # bright red
-    "error": "31",  # standard red
-    "skip": "93",  # bright yellow
-    "xfail": "91",  # bright red
-    "xpass": "93",  # bright yellow
-    "emsg": "0;38;2;252;205;174",  # soft peach
-    "section": "90",  # gray
-    "dim": "2",
-    "bold": "1",
-    "bdd_feature": "0;38;2;220;248;255",  # baby blue
-    "bdd_scenario": "0;38;2;170;225;255",  # steel blue
-}
+_DARK_PALETTE: Mapping[str, str] = MappingProxyType(
+    {
+        "pass": "92",
+        "fail": "91",
+        "error": "31",
+        "skip": "93",
+        "xfail": "91",
+        "xpass": "93",
+        "emsg": "0;38;2;252;205;174",
+        "section": "90",
+        "dim": "2",
+        "bold": "1",
+        "bdd_feature": "0;38;2;220;248;255",
+        "bdd_scenario": "0;38;2;170;225;255",
+    }
+)
 
-_LIGHT_PALETTE: Dict[str, str] = {
-    "pass": "0;38;2;0;120;0",  # dark forest green
-    "fail": "0;38;2;200;0;0",  # deep red
-    "error": "0;38;2;170;0;0",  # dark red
-    "skip": "0;38;2;160;90;0",  # dark burnt amber
-    "xfail": "0;38;2;200;0;0",  # deep red
-    "xpass": "0;38;2;160;90;0",  # dark burnt amber
-    "emsg": "0;38;2;80;0;160",  # dark violet
-    "section": "0;38;2;80;80;80",  # dark gray
-    "dim": "2",
-    "bold": "1",
-    "bdd_feature": "0;38;2;0;50;160",  # deep navy
-    "bdd_scenario": "0;38;2;0;80;170",  # deep ocean blue
-}
-
-_active_palette: Dict[str, str] = _DARK_PALETTE
+_LIGHT_PALETTE: Mapping[str, str] = MappingProxyType(
+    {
+        "pass": "32",
+        "fail": "31",
+        "error": "0;38;2;160;0;0",
+        "skip": "33",
+        "xfail": "31",
+        "xpass": "33",
+        "emsg": "0;38;2;80;0;160",
+        "section": "90",
+        "dim": "0;38;2;90;90;90",
+        "bold": "1",
+        "bdd_feature": "34",
+        "bdd_scenario": "0;38;2;0;100;190",
+    }
+)
+_REQUIRED_PALETTE_KEYS: frozenset = frozenset(_DARK_PALETTE)
+_active_palette: Mapping[str, str] = _DARK_PALETTE
 
 # ── Theme helpers ─────────────────────────────────────────────────────────────
 
@@ -153,18 +158,15 @@ def _query_osc11(timeout: float = 0.1) -> Optional[str]:
         return None
 
     response = None
+    old_settings = None
     try:
         old_settings = termios.tcgetattr(tty_fd)
-        try:
-            tty.setraw(tty_fd)
-            os.write(tty_fd, b"\033]11;?\033\\")
-            response = _read_osc11_response(tty_fd, timeout)
-        finally:
-            termios.tcsetattr(tty_fd, termios.TCSADRAIN, old_settings)
-    except Exception:  # pylint: disable=broad-except
-        response = None
+        tty.setraw(tty_fd)
+        os.write(tty_fd, b"\033]11;?\033\\")
+        response = _read_osc11_response(tty_fd, timeout)
     finally:
-        os.close(tty_fd)
+        if old_settings is not None:
+            termios.tcsetattr(tty_fd, termios.TCSADRAIN, old_settings)
 
     if not response:
         return None
@@ -402,9 +404,9 @@ def detect_theme() -> Theme:
     # 2–5. Try each detector in priority order, return first match
     detected = (
         _detect_colorfgbg()
-        or _detect_osc11()
         or _detect_term_program()
         or _detect_windows()
+        or _detect_osc11()
     )
     return detected if detected is not None else "dark"
 
@@ -451,14 +453,25 @@ def no_color_context():
         _NO_COLOR = previous
 
 
-def get_active_palette() -> Dict[str, str]:
+def get_active_palette() -> Mapping[str, str]:
     """Return the currently active palette. For use in tests."""
     return _active_palette
 
 
-def set_active_palette(palette: Dict[str, str]) -> None:
-    """Set the active palette directly. For use in tests."""
+def set_active_palette(palette: Mapping[str, str]) -> None:
+    """
+    Set the active palette directly.
+
+    Validates that the palette contains all required keys before applying.
+    Raises ValueError if any keys are missing — prevents silent KeyError
+    crashes in color functions downstream.
+
+    For use in tests only.
+    """
     global _active_palette  # pylint: disable=global-statement
+    missing = _REQUIRED_PALETTE_KEYS - palette.keys()
+    if missing:
+        raise ValueError(f"palette missing required keys: {sorted(missing)}")
     _active_palette = palette
 
 
@@ -534,7 +547,14 @@ def c_bdd_scenario(t: str) -> str:
 
 # ── Outcome tables ────────────────────────────────────────────────────────────
 
-_OUTCOME_ORDER = ("passed", "failed", "error", "skipped", "xfailed", "xpassed")
+_OUTCOME_ORDER: Tuple[Outcome, ...] = (
+    "passed",
+    "failed",
+    "error",
+    "skipped",
+    "xfailed",
+    "xpassed",
+)
 
 _BADGE_LABELS: Dict[str, str] = {
     "passed": "PASS",
@@ -545,7 +565,7 @@ _BADGE_LABELS: Dict[str, str] = {
     "xpassed": "XPASS",
 }
 
-_OUTCOME_COLOR: Dict[str, Callable[[str], str]] = {
+_OUTCOME_COLOR: Dict[Outcome, Callable[[str], str]] = {
     "passed": c_pass,
     "failed": c_fail,
     "error": c_error,
@@ -554,7 +574,7 @@ _OUTCOME_COLOR: Dict[str, Callable[[str], str]] = {
     "xpassed": c_xpass,
 }
 
-_SUMMARY_FMT: Dict[str, Callable[[int], str]] = {
+_SUMMARY_FMT: Dict[Outcome, Callable[[int], str]] = {
     "passed": lambda n: c_pass(f"{n} passed"),
     "failed": lambda n: c_fail(f"{n} failed"),
     "error": lambda n: c_error(f"{n} error" if n == 1 else f"{n} errors"),
@@ -567,15 +587,11 @@ _SUMMARY_FMT: Dict[str, Callable[[int], str]] = {
 def get_badge(outcome: str) -> str:
     """Return a colored badge string for the given outcome."""
     label = _BADGE_LABELS.get(outcome, outcome.upper())
-    color_fn = _OUTCOME_COLOR.get(outcome)
+    color_fn = _OUTCOME_COLOR.get(outcome, None)  # type: ignore[call-overload]
     return color_fn(label) if color_fn is not None else label
 
 
 __all__ = [
-    "_NO_COLOR",
-    "_esc",
-    "_DARK_PALETTE",
-    "_LIGHT_PALETTE",
     "c_pass",
     "c_fail",
     "c_error",
@@ -592,12 +608,11 @@ __all__ = [
     "set_theme",
     "reset_theme",
     "get_badge",
-    "_BADGE_LABELS",
-    "_OUTCOME_ORDER",
-    "_OUTCOME_COLOR",
-    "_SUMMARY_FMT",
     "get_active_palette",
     "set_active_palette",
     "theme_context",
     "no_color_context",
+    "_OUTCOME_ORDER",
+    "_OUTCOME_COLOR",
+    "_SUMMARY_FMT",
 ]

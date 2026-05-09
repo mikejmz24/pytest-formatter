@@ -26,6 +26,7 @@ from pytest_glaze._colors import (
     detect_theme,
     get_badge,
     no_color_context,
+    set_active_palette,
     theme_context,
 )
 
@@ -134,7 +135,6 @@ class TestDetectThemeMultiSource:
             return original_open(path, flags)
 
         monkeypatch.setattr(os, "open", _fake_open)
-        from pytest_glaze._colors import _query_osc11
 
         assert _query_osc11() is None
 
@@ -307,6 +307,28 @@ class TestSetTheme:
             with theme_context("light"):
                 light_output = c_pass("PASS")
                 assert dark_output != light_output
+
+
+class TestPaletteValidation:
+    """Tests for set_active_palette() validation."""
+
+    def test_valid_palette_accepted(self):
+        set_active_palette(_DARK_PALETTE)  # should not raise
+
+    def test_missing_key_raises_value_error(self):
+        bad_palette = {"pass": "92"}  # missing all other keys
+        with pytest.raises(ValueError, match="missing required keys"):
+            set_active_palette(bad_palette)
+
+    def test_empty_palette_raises_value_error(self):
+        with pytest.raises(ValueError, match="missing required keys"):
+            set_active_palette({})
+
+    def test_extra_keys_are_allowed(self):
+        """Palettes with extra keys beyond required are valid."""
+
+        extended = dict(_DARK_PALETTE) | {"extra_key": "99"}
+        set_active_palette(extended)  # should not raise
 
 
 # ── Color functions pick up active palette ────────────────────────────────────
