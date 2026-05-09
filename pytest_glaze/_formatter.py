@@ -222,14 +222,14 @@ class FormatterPlugin(_FormatterTestingMixin):
         if feature_name and feature_name != self.bdd.cur_feature:
             if self.bdd.any_feature_printed:
                 self._p()
-            self._p(c_bdd_feature(f"  Feature: {feature_name}"))
+            self._p(c_bdd_feature(f"  Feature: {LineColorizer.sanitize(feature_name)}"))
             self.bdd.cur_feature = feature_name
             self.bdd.any_feature_printed = True
         if self.bdd.last_was_full_step:
             self._p()
         color_fn = _OUTCOME_COLOR["skipped"]
         badge = get_badge("skipped")
-        scenario_name = meta.scenario_name
+        scenario_name = LineColorizer.sanitize(meta.scenario_name)
         self._p(
             f"    {color_fn('---')} {badge}  {color_fn(f'Scenario: {scenario_name}')}"
         )
@@ -338,14 +338,18 @@ class FormatterPlugin(_FormatterTestingMixin):
         if feature_name and feature_name != self.bdd.cur_feature:
             if self.bdd.any_feature_printed:
                 self.bdd.scenario_buf.append("")
-            self.bdd.scenario_buf.append(c_bdd_feature(f"  Feature: {feature_name}"))
+            self.bdd.scenario_buf.append(
+                c_bdd_feature(f"  Feature: {LineColorizer.sanitize(feature_name)}")
+            )
             self.bdd.cur_feature = feature_name
             self.bdd.any_feature_printed = True
             self.bdd.first_in_file = False
         elif not self.bdd.first_in_file:
             self.bdd.scenario_buf.append("")
         self.bdd.first_in_file = False
-        self.bdd.scenario_buf.append(c_bdd_scenario(f"    Scenario: {scenario.name}"))
+        self.bdd.scenario_buf.append(
+            c_bdd_scenario(f"    Scenario: {LineColorizer.sanitize(scenario.name)}")
+        )
         self.bdd.last_step_idx = -1
 
     def _bdd_before_step(self, _request, _feature, _scenario, step, _step_func) -> None:
