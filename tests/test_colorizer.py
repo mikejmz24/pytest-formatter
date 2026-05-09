@@ -582,3 +582,35 @@ class TestStripAnsi:
         assert LineColorizer.strip_ansi(text) == "PASS\x01\x02"
         # sanitize() would render \x01 as \\x01
         assert LineColorizer.sanitize(text) == "PASS\\x01\\x02"
+
+
+class TestSanitize:
+    def test_strips_general_csi(self):
+        """Sanitize must handle CSI sequences beyond simple SGR color codes."""
+        assert LineColorizer.sanitize("\x1b[2Jboom") == "boom"
+
+    def test_strips_cursor_move_csi(self):
+        assert LineColorizer.sanitize("\x1b[1;1Htext") == "text"
+
+    def test_strips_osc_hyperlink(self):
+        raw = "\x1b]8;;https://evil.example\x07click\x1b]8;;\x07"
+        assert LineColorizer.sanitize(raw) == "click"
+
+    def test_exposes_unterminated_osc_escape(self):
+        """Unterminated OSC — ESC byte itself must be made visible, not executed."""
+        raw = "\x1b]8;;https://evil.example"
+        result = LineColorizer.sanitize(raw)
+        assert "\\x1b" in result
+        assert "\x1b" not in result
+
+    def test_exposes_carriage_return(self):
+        assert LineColorizer.sanitize("safe\roverwrite") == "safe\\roverwrite"
+
+    def test_preserves_tabs_newlines_and_unicode(self):
+        assert LineColorizer.sanitize("a\tb\ncafé") == "a\tb\ncafé"
+
+    def test_strips_c0_control_chars(self):
+        assert LineColorizer.sanitize("\x01\x02hello") == "\\x01\\x02hello"
+
+    def test_strips_del(self):
+        assert LineColorizer.sanitize("hello\x7f") == "hello\\x7f"

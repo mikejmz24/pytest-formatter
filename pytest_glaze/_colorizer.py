@@ -8,9 +8,23 @@ Depends only on _colors and _types.
 from __future__ import annotations
 
 import re
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 from pytest_glaze._colors import c_emsg, c_fail, c_pass, c_skip
+from pytest_glaze._types import Outcome
+
+# ── Compiled ANSI/control regexes ─────────────────────────────────────────────
+# Compiled once at import time for performance — used in sanitize() and strip_ansi().
+
+# Full CSI: ESC [ <param bytes 0-?> <intermediate bytes space-/> <final byte @-~>
+# More complete than [\d;]* — catches cursor moves, erase commands, and all SGR variants.
+_CSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+# OSC: ESC ] ... BEL or ST terminator (hyperlinks, title sets, icon names)
+_OSC_RE = re.compile(r"\x1b\].*?(?:\x07|\x1b\\)", re.DOTALL)
+
+# C0 control characters (excludes \t=\x09, \n=\x0a)
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
 
 class LineColorizer:
@@ -22,6 +36,8 @@ class LineColorizer:
     X (received) can be colored red and Y (expected) green, matching the
     +/- diff coloring on subsequent lines.
     """
+
+    ColorFn = Callable[[str], str]
 
     # Operators ordered longest-first to prevent partial matches
     # (e.g. "is not" must be tried before "is", "not in" before "in")
@@ -59,7 +75,7 @@ class LineColorizer:
     # Semantic choice (intentionally inverted from the assert-line convention):
     #   Obtained → c_fail (red)   — the wrong value, the one that caused the failure
     #   Expected → c_pass (green) — the target value, what the test demanded
-    _LABEL_COLORS: Tuple[Tuple[str, object], ...] = (
+    _LABEL_COLORS: Tuple[Tuple[str, ColorFn], ...] = (
         ("Obtained: ", c_fail),
         ("Expected: ", c_pass),
     )
@@ -206,7 +222,7 @@ class LineColorizer:
                 continue
 
             if ch in ")]}":
-                depth -= 1
+                depth = max(0, depth - 1)
                 i += 1
                 continue
 
@@ -297,7 +313,7 @@ class LineColorizer:
         return c_emsg(text)
 
     @classmethod
-    def color_e_line(cls, line: str, outcome: str, is_first: bool) -> str:
+    def color_e_line(cls, line: str, outcome: Outcome, is_first: bool) -> str:
         """
         Dispatch coloring for one E line based on content and context.
 
@@ -403,27 +419,10 @@ class LineColorizer:
           - \t  (tab is printable context, not a control attack vector)
           - All printable Unicode
         """
-        # Step 1 — strip CSI escape sequences (\033[ ... letter)
-        # Step 2 — strip OSC escape sequences (\033] ... ST or BEL)
-        s = re.sub(
-            r"\033\[[\d;]*[a-zA-Z]"  # CSI: \033[ ... letter  (colors, bold, dim)
-            r"|\033\][^\033\007]*"  # OSC start: \033] ...
-            r"(?:\033\\|\007)",  # OSC terminator: ST (\033\) or BEL (\007)
-            "",
-            text,
-        )
-        # Step 3 — strip remaining C0 control chars (excludes \t=\x09, \n=\x0a)
-        # Rendered as their repr escape (e.g. \x01 → \\x01) so hostile payloads
-        # are visible in output rather than silently swallowed.
-        s = re.sub(
-            r"[\x00-\x08\x0b-\x1f\x7f]",
-            lambda m: repr(m.group(0))[1:-1],
-            s,
-        )
-        # Step 4 — make carriage returns visible to expose line-overwrite attacks
-        # \r alone moves the cursor to column 0 and overwrites preceding output.
-        s = s.replace("\r", "\\r")
-        return s
+        s = _CSI_RE.sub("", text)
+        s = _OSC_RE.sub("", s)
+        s = _CONTROL_RE.sub(lambda m: repr(m.group(0))[1:-1], s)
+        return s.replace("\r", "\\r")
 
     @staticmethod
     def strip_ansi(text: str) -> str:
@@ -439,8 +438,4 @@ class LineColorizer:
           - CSI sequences: \\033[ ... letter  (colors, bold, dim, cursor moves)
           - OSC sequences: \\033] ... ST/BEL  (hyperlinks, title sets)
         """
-        return re.sub(
-            r"\033\[[\d;]*[a-zA-Z]|\033\][^\033\007]*(?:\033\\|\007)",
-            "",
-            text,
-        )
+        return _OSC_RE.sub("", _CSI_RE.sub("", text))
