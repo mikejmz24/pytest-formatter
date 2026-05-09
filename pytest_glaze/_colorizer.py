@@ -424,3 +424,23 @@ class LineColorizer:
         # \r alone moves the cursor to column 0 and overwrites preceding output.
         s = s.replace("\r", "\\r")
         return s
+
+    @staticmethod
+    def strip_ansi(text: str) -> str:
+        """
+        Strip all ANSI escape sequences from text, returning plain string.
+
+        Unlike ``sanitize()``, this method does not make C0 control characters
+        visible — it simply removes all ANSI codes. Use this when you need
+        plain text for further processing (e.g. length calculation, string
+        search, re-coloring) rather than for safe terminal output.
+
+        Strips:
+          - CSI sequences: \\033[ ... letter  (colors, bold, dim, cursor moves)
+          - OSC sequences: \\033] ... ST/BEL  (hyperlinks, title sets)
+        """
+        return re.sub(
+            r"\033\[[\d;]*[a-zA-Z]|\033\][^\033\007]*(?:\033\\|\007)",
+            "",
+            text,
+        )

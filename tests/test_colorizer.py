@@ -540,3 +540,45 @@ class TestSanitizeControlChars:
         """A payload combining CSI, OSC, and C0 controls must be fully sanitized."""
         payload = "\033[91m\033]8;;https://x.com\033\\evil\033]8;;\033\\\x01\rclean"
         assert LineColorizer.sanitize(payload) == "evil\\x01\\rclean"
+
+
+class TestStripAnsi:
+    """Unit tests for LineColorizer.strip_ansi."""
+
+    def test_strips_csi_color_codes(self):
+        assert LineColorizer.strip_ansi("\033[92mPASS\033[0m") == "PASS"
+
+    def test_strips_csi_bold(self):
+        assert LineColorizer.strip_ansi("\033[1mTotal\033[0m") == "Total"
+
+    def test_strips_csi_dim(self):
+        assert LineColorizer.strip_ansi("\033[2m0.1ms\033[0m") == "0.1ms"
+
+    def test_strips_24bit_color(self):
+        assert LineColorizer.strip_ansi("\033[0;38;2;252;205;174mE\033[0m") == "E"
+
+    def test_strips_osc_hyperlink(self):
+        text = "\033]8;;https://example.com\033\\link\033]8;;\033\\"
+        assert LineColorizer.strip_ansi(text) == "link"
+
+    def test_plain_text_unchanged(self):
+        assert LineColorizer.strip_ansi("hello world") == "hello world"
+
+    def test_empty_string(self):
+        assert LineColorizer.strip_ansi("") == ""
+
+    def test_mixed_ansi_and_text(self):
+        text = "\033[92m--- PASS\033[0m  test_login  \033[2m0.1ms\033[0m"
+        assert LineColorizer.strip_ansi(text) == "--- PASS  test_login  0.1ms"
+
+    def test_preserves_newlines(self):
+        text = "\033[92mline1\033[0m\nline2"
+        assert LineColorizer.strip_ansi(text) == "line1\nline2"
+
+    def test_strip_ansi_does_not_sanitize_c0_controls(self):
+        """strip_ansi removes ANSI codes only — unlike sanitize() it does not
+        make C0 control characters visible. Use sanitize() for untrusted input."""
+        text = "\033[92mPASS\033[0m\x01\x02"
+        assert LineColorizer.strip_ansi(text) == "PASS\x01\x02"
+        # sanitize() would render \x01 as \\x01
+        assert LineColorizer.sanitize(text) == "PASS\\x01\\x02"
