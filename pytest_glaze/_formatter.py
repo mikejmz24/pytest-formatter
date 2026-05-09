@@ -489,3 +489,5 @@ class FormatterPlugin(_FormatterTestingMixin):
         self._p()
         self._p(f"{c_bold('Total:')} {summary}  {c_dim(f'in {elapsed:.2f}s')}")
         self._p()
+        if self.session.output_buf is None:
+            sys.stdout.flush()
